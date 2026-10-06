@@ -1,0 +1,34 @@
+<RCC>
+    <qresource prefix="/">
+        <file>style/dark.qss</file>
+        <file>icons/arrow_down.png</file>
+        <file>icons/arrow_down_hover.png</file>
+        <file>icons/arrow_down_on.png</file>
+        <file>icons/arrow_down_off.png</file>
+        <file>icons/spin_up.png</file>
+        <file>icons/spin_down.png</file>
+        <file>icons/spin_up_hover.png</file>
+        <file>icons/spin_down_hover.png</file>
+        <file>icons/spin_up_off.png</file>
+        <file>icons/spin_down_off.png</file>
+        <file>icons/play.png</file>
+        <file>icons/pause.png</file>
+        <file>icons/stop.png</file>
+        <file>icons/record.png</file>
+        <file>icons/open.png</file>
+        <file>icons/camera.png</file>
+        <file>icons/iwave_logo.png</file>
+        <file>icons/iwave_logo_small.png</file>
+        <file>icons/iwave_icon_16.png</file>
+        <file>icons/iwave_icon_24.png</file>
+        <file>icons/iwave_icon_32.png</file>
+        <file>icons/iwave_icon_48.png</file>
+        <file>icons/iwave_icon_64.png</file>
+        <file>icons/iwave_icon_128.png</file>
+        <file>icons/iwave_icon_256.png</file>
+        <file>icons/iwave_logo_large.png</file>
+        <file>icons/iwave_mono.png</file>
+        <file>icons/iwave_logo_bar.png</file>
+        <file>icons/iwave_logo_compact.png</file>
+    </qresource>
+</RCC>

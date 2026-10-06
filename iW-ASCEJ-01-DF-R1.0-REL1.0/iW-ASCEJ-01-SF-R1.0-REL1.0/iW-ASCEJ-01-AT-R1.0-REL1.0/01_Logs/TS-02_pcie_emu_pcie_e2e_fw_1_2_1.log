@@ -1,0 +1,46 @@
+# 2026-10-05T00:09:32+05:30 suite=pcie_emu test=pcie_e2e_fw_1_2_1
+Internal ctest changing into directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/pcie_emu
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/pcie_emu/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/pcie_emu/DartConfiguration.tcl
+Test project /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/pcie_emu
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 1
+    Start 1: pcie_e2e_fw_1_2_1
+
+1: Test command: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/pcie_emu/emu_test
+1: Working Directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/pcie_emu
+1: Test timeout computed to be: 10000000
+1: PCIe end to end — GUI 1.2.1 against firmware 1.2.1
+1: 
+1:   PASS  boot: the DAC plays the DDS
+1:   PASS  GUI attached to the emulated BAR
+1:   PASS  full sync: ping, identity, every register read back
+1:   PASS  snapshot returned 19 values
+1:   PASS  DAC stream clock read back: 200000 kHz (the generator's sample rate)
+1:   PASS  current firmware: no compensation
+1:   PASS  readback: DDS
+1:   PASS  GUI selects Host / GNU Radio stream
+1:   PASS    -> the DAC plays the host stream
+1:   PASS    -> the device confirms host
+1:   PASS  GUI selects DDS compiler
+1:   PASS    -> the DAC plays the DDS
+1:   PASS    -> the device confirms DDS
+1:   PASS  restore defaults
+1:   PASS    -> defaults put the DDS on the DAC
+1:   PASS  after defaults the panel shows what the DAC really plays (DDS)
+1:   PASS  DAC source 7 rejected: ACK error 0x5
+1: 
+1: RESULT: PASS
+1/1 Test #1: pcie_e2e_fw_1_2_1 ................   Passed    0.03 sec
+
+The following tests passed:
+	pcie_e2e_fw_1_2_1
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.03 sec

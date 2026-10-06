@@ -1,0 +1,46 @@
+# 2026-10-05T00:09:32+05:30 suite=pcie_emu test=pcie_e2e_fw_1_2_0
+Internal ctest changing into directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/pcie_emu
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/pcie_emu/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/pcie_emu/DartConfiguration.tcl
+Test project /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/pcie_emu
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 2
+    Start 2: pcie_e2e_fw_1_2_0
+
+2: Test command: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/pcie_emu/emu_test_legacy
+2: Working Directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/pcie_emu
+2: Test timeout computed to be: 10000000
+2: PCIe end to end — GUI 1.2.1 against FIRMWARE 1.2.0 (not yet reflashed)
+2: 
+2:   PASS  1.2.0 boot: the DAC plays the host stream (the old bug)
+2:   PASS  GUI attached to the emulated BAR
+2:   PASS  full sync: ping, identity, every register read back
+2:   PASS  snapshot returned 19 values
+2:   PASS  DAC stream clock read back: 200000 kHz (the generator's sample rate)
+2:   PASS  old firmware detected from its capability word
+2:   PASS  readback shows the truth: the DAC is on the host stream (firmware itself claims DDS)
+2:   PASS  GUI selects Host / GNU Radio stream
+2:   PASS    -> the DAC plays the host stream
+2:   PASS    -> the device confirms host
+2:   PASS  GUI selects DDS compiler
+2:   PASS    -> the DAC plays the DDS
+2:   PASS    -> the device confirms DDS
+2:   PASS  restore defaults
+2:   PASS    -> 1.2.0 defaults put the host stream on the DAC (its bug), and the GUI will show that
+2:   PASS  after defaults the panel shows what the DAC really plays (host stream)
+2:   PASS  DAC source 7 rejected: ACK error 0x5
+2: 
+2: RESULT: PASS
+1/1 Test #2: pcie_e2e_fw_1_2_0 ................   Passed    0.03 sec
+
+The following tests passed:
+	pcie_e2e_fw_1_2_0
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.03 sec

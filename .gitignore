@@ -1,0 +1,47 @@
+# ---- Build outputs ----
+build/
+Build/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile.local
+
+# Backend helpers are built in-tree by the GUI CMake build and are
+# never shipped prebuilt (see the release notes, "Compatibility").
+iW-ASCEJ-01-DF-R1.0-REL1.0/iW-ASCEJ-01-SF-R1.0-REL1.0/iW-ASCEJ-01-SC-R1.0-REL1.0/01_sdr_workstation_GUI/backend/bin/
+iW-ASCEJ-01-DF-R1.0-REL1.0/iW-ASCEJ-01-SF-R1.0-REL1.0/iW-ASCEJ-01-SC-R1.0-REL1.0/01_sdr_workstation_GUI/backend/udp/iwfg_c2h
+
+# ---- Object / module files ----
+*.o
+*.ko
+*.mod
+*.mod.c
+*.a
+*.so
+*.so.*
+.tmp_versions/
+modules.order
+
+# ---- Vitis / Vivado scratch ----
+.Xil/
+*.jou
+vivado*.log
+vitis*.log
+_ide/
+*.bif.bak
+
+# ---- Runtime logs and captures ----
+sdr_backend.log
+*.iq
+*.bin.capture
+
+# ---- Editor / OS ----
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+.DS_Store
+core.[0-9]*
+vgcore.*

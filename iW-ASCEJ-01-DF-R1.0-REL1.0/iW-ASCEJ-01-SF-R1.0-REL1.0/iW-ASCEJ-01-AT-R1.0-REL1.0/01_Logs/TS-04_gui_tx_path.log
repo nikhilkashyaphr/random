@@ -1,0 +1,49 @@
+# 2026-10-05T00:10:25+05:30 suite=gui test=tx_path
+Internal ctest changing into directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui/DartConfiguration.tcl
+Test project /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 1
+    Start 1: tx_path
+
+1: Test command: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui/tx_path_test
+1: Working Directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui
+1: Test timeout computed to be: 10000000
+1: Host transmit path (IqGenerator -> FIFO -> iwfg_h2c-style replay)
+1: 
+1:   PASS  DAC packing: bits[1:0] == 00 in every word (all waveforms)
+1:   PASS  DAC packing: |sample| <= 8191<<2 = 32764
+1:   PASS  10 MHz @ 200 MSPS, 4096-sample loop -> 10.009766 MHz (205 cycles)
+1:   PASS  12.5 MHz fits the loop exactly -> unchanged
+1:   PASS  negative frequencies keep their sign (-7.324219 MHz)
+1:   PASS  coherence off -> exact request
+1:   PASS  looped chunk: tone at 10.009766 MHz
+1:   PASS  looped chunk: SFDR 93.1 dB (14-bit quantisation limited)
+1:   PASS  end to end, coherent: tone at 10.009766 MHz
+1:   PASS  end to end, coherent: SFDR 93.1 dB through the replay
+1:   PASS  end to end, NON-coherent (old behaviour): SFDR only 12.5 dB — the replay seams the test must detect
+1:   PASS  live update while running: now 20.019531 MHz (20 MHz requested)
+1:   PASS  transmitting() reports the new frequency
+1:   PASS  stop honoured in 10 ms
+1:   PASS  restart without recreating the generator
+1:   PASS  non-FIFO path: generator stops with an error
+1:   PASS    ...and is not left marked as running
+1:   PASS    ...and a second start is accepted (not silently ignored)
+1:   PASS  coherent loop written once (1 chunk(s) after 1 s) — nothing more for iwfg_h2c to copy
+1:   PASS  Stop sends a zero chunk: the replayed chunk is silence
+1: 
+1: RESULT: PASS
+1/1 Test #1: tx_path ..........................   Passed    1.47 sec
+
+The following tests passed:
+	tx_path
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   1.48 sec

@@ -1,0 +1,25 @@
+# Build artifacts
+build/
+
+# Test files
+test_intellisense.c
+
+# Object files
+*.o
+*.ko
+
+# Temporary files
+*~
+*.tmp
+*.swp
+*.swo
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Core dumps
+core
+vgcore.*

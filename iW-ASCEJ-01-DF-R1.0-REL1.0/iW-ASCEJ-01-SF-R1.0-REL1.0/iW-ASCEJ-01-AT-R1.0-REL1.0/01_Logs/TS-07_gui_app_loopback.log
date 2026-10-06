@@ -1,0 +1,39 @@
+# 2026-10-05T00:10:46+05:30 suite=gui test=app_loopback
+Internal ctest changing into directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui/DartConfiguration.tcl
+Test project /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 4
+    Start 4: app_loopback
+
+4: Test command: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui/app_loopback_test
+4: Working Directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui
+4: Environment variables: 
+4:  QT_QPA_PLATFORM=offscreen
+4: Test timeout computed to be: 10000000
+4: QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-root'
+4: This plugin does not support propagateSizeHints()
+4: This plugin does not support propagateSizeHints()
+4: This plugin does not support raise()
+4: Whole application, Simulation: generator -> loopback -> spectrum -> check
+4: 
+4:   PASS  H2C CONTROL action present
+4:   PASS  control window opened
+4:   PASS  Host + generator: the received tone follows it -> "✓ Loopback verified. The generator moved 7.300 MHz and the tone received through the ADC moved 7.300"
+4:   PASS  DAC on the DDS: the check says the ADC is not seeing the generator, and why
+4: 
+4: RESULT: PASS
+1/1 Test #4: app_loopback .....................   Passed   15.71 sec
+
+The following tests passed:
+	app_loopback
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =  15.71 sec

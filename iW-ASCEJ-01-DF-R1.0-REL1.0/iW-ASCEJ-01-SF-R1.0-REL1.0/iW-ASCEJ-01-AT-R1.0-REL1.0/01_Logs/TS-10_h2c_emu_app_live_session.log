@@ -1,0 +1,64 @@
+# 2026-10-05T00:13:25+05:30 suite=h2c_emu test=app_live_session
+Internal ctest changing into directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/DartConfiguration.tcl
+Test project /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 3
+    Start 3: app_live_session
+
+3: Test command: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/app_live_emu_test
+3: Working Directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu
+3: Environment variables: 
+3:  H2C_BIN=/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/iwfg_h2c
+3:  C2H_BIN=/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/c2h_stream
+3:  FAKE_IWFG_SO=/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/libfake_iwfg.so
+3:  QT_QPA_PLATFORM=offscreen
+3: Test timeout computed to be: 240
+3: QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/app_live_emu_4034/runtime-root'
+3: This plugin does not support propagateSizeHints()
+3: Whole application, live PCIe session, card emulated (DAC looped into ADC)
+3: 
+3:   PASS  H2C CONTROL action present
+3: This plugin does not support raise()
+3:   PASS  control window opened
+3:   PASS  Transmit tab: H2C playback helper running, waiting for the generator
+3:   PASS  generator FIFO follows the backend's (/tmp/app_live_emu_4034/h2c.fifo)
+3:   PASS  Start generator button
+3:   PASS  H2C playback row: streaming
+3: This plugin does not support propagateSizeHints()
+3:   PASS  H2C to card row: iwfg_h2c's measured rate shown
+3:   PASS  C2H capture row: delivered vs needed shown
+3:   PASS  Received row: the received tone matches the generator's frequency
+3:   PASS  Verify loopback: "✓ Loopback verified. The generator moved 7.300 MHz and the tone received through the ADC moved 7.299 MHz. The "
+3:   PASS  Start/Stop actions present
+3:   PASS  Stop returned in 0 ms
+3:   PASS  Start returned in 7 ms (helper pre-flight no longer freezes)
+3:   PASS  the injected C2H driver error fired
+3:   PASS  no dialog for a recovered capture helper
+3:   PASS  transmit streaming after the restart
+3:   PASS  Verify loopback after the recovery: "✓ Loopback verified. The generator moved 7.300 MHz and the tone received through the ADC moved 7.299 MHz. The "
+3:   PASS  injected: the card stops delivering C2H data (c2h_stream waits in the driver)
+3:   PASS  after ~5 s with no capture data the GUI resets the device by itself
+3:   PASS  the reset finished: transmit closed first, capture after, both restarted
+3:   PASS  transmit streaming after the reset
+3:   PASS  no dialog for a recovered device
+3:   PASS  Verify loopback after the reset: "✓ Loopback verified. The generator moved 7.300 MHz and the tone received through the ADC moved 7.299 MHz. The "
+3:   PASS  sdr_backend.log records the helper output and the recovery reason
+3:   PASS  the GUI thread never froze (longest heartbeat gap 210 ms)
+3:   PASS  closing the window took 160 ms
+3: 
+3: RESULT: PASS
+1/1 Test #3: app_live_session .................   Passed   35.49 sec
+
+The following tests passed:
+	app_live_session
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =  35.49 sec
