@@ -2,8 +2,10 @@
 
 ## 01_Host_Test_Suite
 
-Host-side tests. They need no board, no root access and no GPU, only gcc,
-CMake and the Qt 5 development files. Every suite builds the code under test
+Host-side tests. They need no board, no root access, no GPU and no NIC, only
+gcc, CMake and the Qt 5 development files (`roce_emu` also needs a writable
+`/dev/shm`, where it builds its synthetic rings under names carrying the test
+PID; it never touches a real receiver's `/dev/shm/iqring`). Every suite builds the code under test
 **directly from the SC and FF folders of this package** (`pkg_paths.cmake`),
 so it always tests the delivered sources.
 
@@ -17,6 +19,7 @@ so it always tests the delivered sources.
 | `pcie_emu/` | GUI `RfdcControl` ↔ emulated BAR ↔ real `pcie_cfg.c`, firmware 1.2.1 and 1.2.0 | 17 + 17 |
 | `gui/` | Transmit path, simulated loopback, control window, whole application in simulation | 20 + 13 + 39 + 4 |
 | `h2c_emu/` | Real `iwfg_h2c`; the send-and-receive chain with fault injection; whole application live, with an `LD_PRELOAD` fake card | 18 + 73 + 26 |
+| `roce_emu/` | RoCEv2 ingest: the real `RoceShmSource` against synthetic `IQRING01` and `RTAP` rings, plus the GPU spectrum arithmetic checked on the CPU | 33 + 28 + 35 |
 
 `01_Host_Test_Suite/README.md` describes each test in detail. If you move
 the folders, override the source locations with `-DPKG_GUI=... -DPKG_FW=...`,

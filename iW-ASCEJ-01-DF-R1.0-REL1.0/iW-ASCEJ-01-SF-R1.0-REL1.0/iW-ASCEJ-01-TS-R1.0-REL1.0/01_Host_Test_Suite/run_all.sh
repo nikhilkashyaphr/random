@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-# Run every host-side test. No board, no root, no GPU needed.
+# Run every host-side test. No board, no root, no GPU and no NIC needed.
 # Needs: gcc, cmake, Qt5 development files (the same as the GUI build).
+#
+# roce_emu additionally needs a writable /dev/shm, which it uses for synthetic
+# RoCEv2 rings named after the test process. It never touches a real
+# receiver's /dev/shm/iqring.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
@@ -10,7 +14,7 @@ rc=0
 echo "== firmware: DAC input routing (main.c) =="
 "$HERE/firmware/run_tests.sh" || rc=1
 
-for suite in pcie_emu gui h2c_emu; do
+for suite in pcie_emu gui h2c_emu roce_emu; do
     echo; echo "== $suite =="
     if ! cmake -S "$HERE/$suite" -B "$WORK/$suite" -DCMAKE_BUILD_TYPE=Release > "$WORK/$suite.cfg.log" 2>&1; then
         echo "configure failed:"; tail -20 "$WORK/$suite.cfg.log"; rc=1; continue

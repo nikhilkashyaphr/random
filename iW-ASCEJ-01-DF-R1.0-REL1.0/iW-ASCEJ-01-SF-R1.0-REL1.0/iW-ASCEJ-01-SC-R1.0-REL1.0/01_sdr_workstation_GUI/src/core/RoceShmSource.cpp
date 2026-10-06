@@ -85,11 +85,24 @@ RoceShmSource::RoceShmSource(QObject* parent)
     //   /dev/shm/roce_tap  roce-extractor          (RTAP)
     // If neither is present, keep the historical default so the error message
     // names the path people expect.
+    m_path = resolvePath();
+}
+
+// The configured path is authoritative when it is set. Ignoring it meant
+// `--roce /dev/shm/other` read its rate and centre from the named ring (main.cpp
+// calls peekRingInfo on it) and then streamed samples from /dev/shm/iqring --
+// one ring's axes over another ring's data when both existed, and a confusing
+// "cannot open /dev/shm/iqring" when only the named one did.
+QString RoceShmSource::resolvePath() const
+{
+    const QString configured = m_cfg.src.devicePath.trimmed();
+    if (!configured.isEmpty()) return configured;
+
     const QString iq  = QStringLiteral("/dev/shm/iqring");
     const QString tap = QStringLiteral("/dev/shm/roce_tap");
-    if (QFile::exists(iq))        m_path = iq;
-    else if (QFile::exists(tap))  m_path = tap;
-    else                          m_path = iq;
+    if (QFile::exists(iq))       return iq;
+    if (QFile::exists(tap))      return tap;
+    return iq;   // keep the historical default so the error names the expected path
 }
 
 RoceShmSource::~RoceShmSource() { unmapRing(); }
@@ -459,6 +472,10 @@ void RoceShmSource::unmapRing()
 void RoceShmSource::start()
 {
     if (m_active) return;
+
+    // Re-resolve here: the Config carrying devicePath reaches this object
+    // through applyConfig(), which runs after the constructor.
+    m_path = resolvePath();
 
     QString err;
     if (!mapRing(&err)) {

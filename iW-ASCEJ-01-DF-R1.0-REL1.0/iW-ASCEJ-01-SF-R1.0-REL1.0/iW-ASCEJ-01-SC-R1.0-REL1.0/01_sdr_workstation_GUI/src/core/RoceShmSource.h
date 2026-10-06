@@ -110,6 +110,14 @@ private:
     bool mapRing(QString* err);
     void unmapRing();
 
+    /// Decide which ring to open. The configured path wins when the operator
+    /// supplied one (ConfigDialog populates it with /dev/shm/iqring for the
+    /// RoCEv2 transport and lets it be edited; main.cpp sets it from --roce),
+    /// and autodetection is the fallback for an empty field. Resolved at
+    /// start() rather than construction, because applyConfig() arrives after
+    /// the source is built.
+    QString resolvePath() const;
+
     QString  m_path;           ///< /dev/shm/iqring
     int      m_fd    = -1;
     void*    m_base  = nullptr;

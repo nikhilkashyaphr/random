@@ -88,31 +88,23 @@ set(PROJECT_SOURCES
     resources/resources.qrc
 )
 
-add_executable(sdr_workstation ${PROJECT_SOURCES})
-add_dependencies(sdr_workstation backend_helpers)
-
-if(SDR_HAVE_CUDA)
-    target_compile_definitions(sdr_workstation PRIVATE SDR_ENABLE_CUDA)
-    target_link_libraries(sdr_workstation PRIVATE CUDA::cudart CUDA::cufft)
-    set_target_properties(sdr_workstation PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-endif()
-target_link_libraries(sdr_workstation PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-
-if(MSVC)
-    target_compile_options(sdr_workstation PRIVATE /W4)
-    set_target_properties(sdr_workstation PROPERTIES WIN32_EXECUTABLE TRUE)
-else()
-    target_compile_options(sdr_workstation PRIVATE -Wall -Wextra -Wpedantic)
-endif()
-
-# Threads are used directly by the acquisition and DSP stages.
 # ---------------------------------------------------------------------------
 # Optional CUDA: the GPUDirect RoCEv2 path.
 #
 # OFF by default so the application builds on a machine with no toolkit —
-# which is most development machines. With it OFF, GpuIqPipeline still
-# compiles and reports "built without CUDA" rather than disappearing, so the
-# UI can explain the absence instead of silently offering a dead option.
+# which is most development machines. With it OFF, GpuIqPipeline and GpuFft
+# still compile and report "built without CUDA" rather than disappearing, so
+# the UI can explain the absence instead of silently offering a dead option.
+#
+# ORDER MATTERS, and it is the whole reason this block sits here rather than
+# further down. It must run BEFORE add_executable():
+#   * `list(APPEND PROJECT_SOURCES ...)` after add_executable() changes the
+#     variable but not the target, so GpuKernels.cu would never be compiled
+#     and every sdr_gpu_* kernel would fail to link.
+#   * `SDR_HAVE_CUDA` is read by the if() just after add_executable(), so
+#     setting it later left SDR_ENABLE_CUDA undefined and silently produced a
+#     CPU-only binary from a -DSDR_ENABLE_CUDA=ON configure. The GPUDirect
+#     ring was then refused at runtime by a build that was asked for it.
 # ---------------------------------------------------------------------------
 option(SDR_ENABLE_CUDA "Build the GPUDirect (CUDA IPC + cuFFT) ingest path" OFF)
 
@@ -132,6 +124,24 @@ if(SDR_ENABLE_CUDA)
     endif()
 endif()
 
+add_executable(sdr_workstation ${PROJECT_SOURCES})
+add_dependencies(sdr_workstation backend_helpers)
+
+if(SDR_HAVE_CUDA)
+    target_compile_definitions(sdr_workstation PRIVATE SDR_ENABLE_CUDA)
+    target_link_libraries(sdr_workstation PRIVATE CUDA::cudart CUDA::cufft)
+    set_target_properties(sdr_workstation PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+endif()
+target_link_libraries(sdr_workstation PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+
+if(MSVC)
+    target_compile_options(sdr_workstation PRIVATE /W4)
+    set_target_properties(sdr_workstation PROPERTIES WIN32_EXECUTABLE TRUE)
+else()
+    target_compile_options(sdr_workstation PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+# Threads are used directly by the acquisition and DSP stages.
 find_package(Threads REQUIRED)
 target_link_libraries(sdr_workstation PRIVATE Threads::Threads)
 

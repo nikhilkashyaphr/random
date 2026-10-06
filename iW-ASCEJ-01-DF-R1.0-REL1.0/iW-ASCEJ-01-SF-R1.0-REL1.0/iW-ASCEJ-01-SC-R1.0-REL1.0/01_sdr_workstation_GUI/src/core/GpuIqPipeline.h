@@ -49,7 +49,12 @@ constexpr quint64 kMagicGpu     = 0x495152494e474731ull;  // "IQRINGG1"
 constexpr quint32 kCtrlBytes    = 4096u;
 constexpr quint32 kCtrlIpcOff   = 1024u;   // 64-byte cudaIpcMemHandle_t
 constexpr quint32 kHdrBytes     = 64u;
-constexpr quint64 kFrameMagic   = 0x4651524d30303031ull;  // frame_hdr magic
+constexpr quint64 kFrameMagic   = 0x49515246524d4131ull;  // "IQRFRMA1"
+// ^ This is rdma_common.h's IQ_FRAME_MAGIC. It previously read
+// 0x4651524d30303031, which matches nothing any producer writes, so a
+// frame-header check against it would have rejected every frame. It was
+// unused and therefore harmless; RoceShmSource::kFrameMagic always had
+// the correct value. Both now agree with the ABI header.
 }
 
 struct GpuStats {
