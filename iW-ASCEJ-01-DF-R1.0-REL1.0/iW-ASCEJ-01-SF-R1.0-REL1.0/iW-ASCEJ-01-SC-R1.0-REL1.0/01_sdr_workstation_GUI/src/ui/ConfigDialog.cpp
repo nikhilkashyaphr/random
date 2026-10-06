@@ -1224,6 +1224,9 @@ void ConfigDialog::commit()
     if (c.acq.sampleRateMsps <= 0.0) c.acq.sampleRateMsps = 122.88;
 
     m_cfg.udpTransport = m_eth->isChecked() && udpSelected();
+    // RoCEv2 is the other Ethernet transport: the main window can start
+    // its receiver too, so the operator does not run rdma_rx by hand.
+    m_cfg.roceTransport = m_eth->isChecked() && !udpSelected();
     if (m_cfg.udpTransport) {
         m_cfg.udpPort = m_udpPort->value();
         // The device combo holds the netdev name in UDP mode; --raw needs it.

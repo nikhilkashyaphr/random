@@ -860,6 +860,18 @@ void MainWindow::onStart()
         return;
     }
 
+    // RoCEv2: the receiver owns the network side and publishes the ring this
+    // source reads. Start it here when nothing is publishing yet, for the same
+    // reason the UDP receiver is started here -- otherwise selecting RoCEv2
+    // and pressing Start just reports "cannot open /dev/shm/iqring". A ring
+    // that already exists belongs to a receiver the operator started, so it is
+    // used as it is and nothing is launched.
+    if (m_cfg.src.mode == SourceMode::Roce && m_sys.roceTransport
+        && !m_backendReady && !sdr::BackendLauncher::roceRingPresent()) {
+        startRoceThenAcquire();
+        return;
+    }
+
     if (!m_source) createSource();
     m_actPause->setChecked(false);
     if (m_dsp) QMetaObject::invokeMethod(m_dsp, "resetCounters", Qt::QueuedConnection);
@@ -954,8 +966,9 @@ void MainWindow::ensureBackend()
 {
     if (m_backend) return;
     m_backend = new sdr::BackendLauncher(this);
-    const QString title = m_sys.udpTransport ? QStringLiteral("UDP receiver")
-                                             : QStringLiteral("Backend");
+    const QString title = m_sys.udpTransport  ? QStringLiteral("UDP receiver")
+                        : m_sys.roceTransport ? QStringLiteral("RoCEv2 receiver")
+                                              : QStringLiteral("Backend");
 
     connect(m_backend, &sdr::BackendLauncher::statusMessage, this, [this](const QString& l) {
         statusBar()->showMessage(l, 5000);
@@ -1312,6 +1325,69 @@ void MainWindow::startUdpThenAcquire()
     cfg.udpFifo     = m_sys.udpFifo.isEmpty() ? QStringLiteral("/tmp/iwfg_c2h.fifo")
                                               : m_sys.udpFifo;
     cfg.udpRawIface = m_sys.udpInterface;      // empty = plain UDP socket
+    m_backend->start(cfg);
+}
+
+void MainWindow::startRoceThenAcquire()
+{
+    ensureBackend();
+    if (m_backend->isRunning() && !m_backend->isStopping()) {
+        statusBar()->showMessage(QStringLiteral("RoCEv2 receiver is starting…"), 4000);
+        return;
+    }
+
+    const bool gpu = m_cfg.src.useGpu;
+
+    if (sdr::BackendLauncher::roceDirectory().isEmpty()) {
+        showNotice(QStringLiteral("roce-missing"), QMessageBox::Warning,
+                   QStringLiteral("RoCEv2 receiver"),
+                   QStringLiteral(
+                       "The supplied RoCEv2 stack was not found next to the "
+                       "application (reference/roce-iq-holoscan).\n\n"
+                       "Start a receiver yourself, or run the GUI from a tree "
+                       "that still has it."));
+        return;
+    }
+
+    // Build on first use, so a fresh checkout does not need a separate step.
+    if (sdr::BackendLauncher::roceReceiverPath(gpu).isEmpty()) {
+        statusBar()->showMessage(QStringLiteral("Building RoCEv2 receiver…"));
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+        bool ok = false;
+        const QString log = sdr::BackendLauncher::buildRoceReceiver(gpu, &ok);
+        QApplication::restoreOverrideCursor();
+        if (!ok) {
+            showNotice(QStringLiteral("roce-build"), QMessageBox::Warning,
+                       QStringLiteral("RoCEv2 receiver"),
+                       gpu ? QStringLiteral(
+                                 "Could not build rdma_rx_gpu. It needs the CUDA "
+                                 "toolkit as well as rdma-core; without it, use "
+                                 "the host ring (rdma_rx).")
+                           : QStringLiteral(
+                                 "Could not build rdma_rx. It needs rdma-core "
+                                 "development files (libibverbs, librdmacm) — see "
+                                 "reference/roce-iq-holoscan/scripts/01_install_base.sh."),
+                       log);
+            return;
+        }
+    }
+
+    // A launched receiver always publishes at /dev/shm/iqring: rdma_rx
+    // hard-codes RING_SHM_NAME, so the source has to be pointed there
+    // whatever the device field held.
+    const QString ring = sdr::roceRingPath();
+    if (m_cfg.src.devicePath != ring) {
+        m_cfg.src.devicePath = ring;
+        if (m_source)
+            QMetaObject::invokeMethod(m_source, "applyConfig", Qt::QueuedConnection,
+                                      Q_ARG(sdr::Config, m_cfg));
+    }
+
+    sdr::BackendConfig cfg;
+    cfg.mode          = sdr::BackendMode::RoceRx;
+    cfg.roceGpu       = gpu;
+    cfg.rocePort      = m_sys.rocePort > 0 ? m_sys.rocePort : 7471;
+    cfg.roceBindAddr  = m_sys.roceBindAddr;
     m_backend->start(cfg);
 }
 

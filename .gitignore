@@ -1,3 +1,9 @@
+# ---- Packaged deliverables ----
+# dist/ holds generated delivery zips. The package DIRECTORY is the source of
+# truth and is committed; the zip is a build artifact rebuilt by
+# TS/02_Scripts/make_manifest.sh + zip, so it is not stored in git.
+dist/
+
 # ---- Build outputs ----
 build/
 Build/

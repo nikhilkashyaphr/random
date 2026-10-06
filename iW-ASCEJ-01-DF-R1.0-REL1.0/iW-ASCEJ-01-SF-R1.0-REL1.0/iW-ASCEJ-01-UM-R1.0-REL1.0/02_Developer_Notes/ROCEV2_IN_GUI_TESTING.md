@@ -49,6 +49,48 @@ zero-copy would mean teaching `DspEngine` to accept device pointers; that is a
 larger change than this work, and it is the only remaining gap between this
 and the Holoscan pipeline.
 
+## The GUI starts the receiver
+
+`rdma_rx` owns the network side and publishes the ring, so until it runs the
+GUI has nothing to read. Selecting RoCEv2 and pressing Start therefore worked
+only if the operator had already started it in a terminal; otherwise the GUI
+reported `cannot open /dev/shm/iqring` and left them to work out why.
+
+`BackendLauncher` already manages the C2H, H2C and UDP helpers with process
+lifecycle, log capture, ordered stop and orphan prevention, so the RoCEv2
+receiver is now one more managed process:
+
+* `BackendMode::RoceRx` launches `reference/roce-iq-holoscan/rdma_rx`, or
+  `rdma_rx_gpu` when the GPU backend is selected, building it on first use
+  exactly as the UDP receiver already was.
+* `roceDirectory()` finds the vendored tree beside the executable or in the
+  source tree. It is looked up separately from `backendDirectory()` because
+  the reference stack is vendored under `reference/`, not built into
+  `backend/`.
+* The ring path is **not** configurable for a launched receiver: `rdma_rx`
+  hard-codes `RING_SHM_NAME "/iqring"` and takes no option for it, so
+  `roceRingPath()` returns `/dev/shm/iqring` and the source is pointed there
+  whatever the device field held.
+* `becameReady()` carries the ring path rather than a capture FIFO, which is
+  what the existing handler already needs to point the source at.
+* Readiness means the ring exists. The receiver creates it before it listens,
+  so that is the thing the GUI actually waits for.
+* The C2H capture watchdog skips this mode, as it already skips the UDP
+  receiver: neither is a capture helper to be restarted.
+
+### A ring that already exists is used, not duplicated
+
+`rdma_rx` creates `/dev/shm/iqring` and dies on a ring it cannot own, and a
+second receiver would also find the `rdma_cm` port taken. So when a ring is
+already present the GUI launches nothing and reads it as it is, and a direct
+`start()` is refused by naming the ring.
+
+The ring check deliberately runs **before** the "is the binary built" check.
+`roce_launch_test` caught the original order: with a receiver already
+publishing but no binary built in this tree, the operator was told to
+`run make` — advice for a problem they did not have, instead of being told a
+receiver was already running.
+
 ## Defects found and fixed
 
 ### 1. The CUDA path could not be built at all
@@ -114,7 +156,7 @@ neither is a test: they publish and leave the verdict to the operator's eye.
 
 ## TS-11 — `01_Host_Test_Suite/roce_emu`
 
-96 checks in three binaries, needing no NIC, no RDMA stack, no GPU and no
+122 checks in four binaries, needing no NIC, no RDMA stack, no GPU and no
 board — only a writable `/dev/shm`.
 
 | Binary | Checks | Covers |
@@ -122,6 +164,7 @@ board — only a writable `/dev/shm`.
 | `roce_ring_test` | 33 | `IQRING01` through the real `RoceShmSource`: production geometry, header adoption, a CW tone measured through `SampleCodec`, newest-slot-wins, and five refusal paths including the GPUDirect ring |
 | `roce_tap_test` | 28 | `RTAP`: magic-based detection, all five dtypes, header-supplied rate/centre/channels/full-scale, seqlock tearing, and four malformed-header refusals |
 | `gpu_math_test` | 35 | `GpuMathRef.h` against an independent DFT, plus the ring ABI constants |
+| `roce_launch_test` | 26 | Starting the receiver from the GUI: discovery of the vendored tree, the unbuilt-binary refusal naming `make`/`make gpu`, the already-publishing refusal, and the watchdog exclusion |
 
 The synthetic producers in `fake_ring.h` are written from the ABI constants
 **independently of `rdma_common.h`**, deliberately. `rdma_common.h` guards its
@@ -156,4 +199,10 @@ from `ROCE_INTEGRATION.md`:
 4. For the GPU ring: `scripts/05_gpudirect_setup.sh` (nvidia_peermem), then
    `rdma_rx_gpu`, with the GUI built `-DSDR_ENABLE_CUDA=ON` — which is what
    defect 1 made impossible. `rdma_rx_gpu` and the GUI must run as the **same
-   user**; a CUDA IPC handle cannot cross users.
+   user**; a CUDA IPC handle cannot cross users. The GUI can now start
+   `rdma_rx_gpu` itself, which satisfies that automatically.
+
+Steps 1 and 2 remain manual because they need root and change the host's
+network configuration. Step 3 no longer needs a terminal: select RoCEv2 and
+press Start, and the GUI builds and starts the receiver if nothing is
+publishing.

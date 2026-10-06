@@ -5,7 +5,7 @@
 | Project | iW-ASCEJ-01 — iWave SDR platform, ZU47DR RFSoC |
 | Package | iW-ASCEJ-01-DF-R1.0-REL1.0 |
 | Package release | REL1.0 (first formal release package) |
-| Software version | 1.2.5 |
+| Software version | 1.2.6 |
 | Firmware PCIe ABI | 4 (capabilities `0x7F`) |
 | Target device | xczu47dr-ffvg1517-2-i |
 | Host | x86-64 Linux, Qt 5.15 / Qt 6, iwfg QDMA driver |
@@ -20,8 +20,29 @@
 | SC | GUI sources (`src/core`, `src/ui`), backend helpers (`c2h_stream`, `iwfg_h2c`, UDP receiver), `iwfg` QDMA kernel driver, resources, CMake; `rfdc_ctl` + `pcie_access` |
 | UM | User Manual (PDF), topic guides, developer notes and the full change log |
 | AT | Acceptance Test Procedure, Acceptance Test Report, raw logs |
-| TS | Host test suite (4 suites, 10 tests, 244 checks) and verification scripts |
+| TS | Host test suite (5 suites, 14 tests, 366 checks) and verification scripts |
 | DF | API and engineering-calculation workbook (1,737 APIs, live calculator), these release notes, manifest |
+
+# What is new in software 1.2.6
+
+GUI only. The board does not need to be reflashed, the helper applications and
+the driver are unchanged.
+
+**RoCEv2 is now usable and testable from the GUI.** Selecting RoCEv2 and
+pressing Start previously worked only if `rdma_rx` had already been started by
+hand in a terminal; otherwise the GUI reported `cannot open /dev/shm/iqring`.
+
+| Change | Effect |
+|---|---|
+| The GUI starts the RoCEv2 receiver | `BackendMode::RoceRx` launches `rdma_rx` (or `rdma_rx_gpu` for the GPU backend) and builds it on first use, as the UDP receiver already was. A ring that already exists is used as it is; a second receiver is refused by name |
+| CUDA builds work | `CMakeLists.txt` tested `SDR_HAVE_CUDA` before setting it and added `GpuKernels.cu` after `add_executable()` had consumed the source list, so `-DSDR_ENABLE_CUDA=ON` silently built a CPU-only binary that then refused every GPUDirect ring |
+| The configured ring path is honoured | `RoceShmSource` ignored `devicePath`, so `--roce <path>` read its rate and centre from the named ring and streamed from `/dev/shm/iqring` |
+| `gpuring::kFrameMagic` corrected | It held a value no producer writes. Unused, so nothing was broken, but a frame check against it would have rejected every GPU-path frame |
+| TS-11, 122 checks | The RoCEv2 ingest path had no automated coverage at all; it now runs with no NIC, no GPU and no board |
+
+All data processing stays in the GUI. `GpuIqPipeline` is deliberately not
+wired into the display — see `UM/02_Developer_Notes/ROCEV2_IN_GUI_TESTING.md`
+for why, and for the one remaining zero-copy gap.
 
 # What is new in software 1.2.5
 
@@ -45,7 +66,7 @@ was tone disturbances, transmit stalls and captures that died or sat at
 | Capture FIFO pipe | 1 MiB (was 64 KiB) |
 | QMC check | The ADC row warns when the ADC QMC gain reads 0 |
 
-# Earlier changes carried in this release (1.2.1 – 1.2.4)
+# Earlier changes carried in this release (1.2.1 – 1.2.5)
 
 | Version | Change |
 |---|---|
@@ -82,6 +103,10 @@ The complete history (1.0.0 onward) is in `UM/02_Developer_Notes/CHANGELOG.md`.
 | TS-08 real `iwfg_h2c`, emulated card | 18/18 PASS |
 | TS-09 send-and-receive chain with fault injection | 73/73 PASS |
 | TS-10 whole application, live session, emulated card | 26/26 PASS |
+| TS-11 RoCEv2 host ring (`IQRING01`) through the real reader | 33/33 PASS |
+| TS-11 RoCEv2 extractor tap (`RTAP`) | 28/28 PASS |
+| TS-11 GPU spectrum arithmetic, verified without a GPU | 35/35 PASS |
+| TS-11 starting the RoCEv2 receiver from the GUI | 26/26 PASS |
 
 # Known limitations
 
@@ -93,3 +118,12 @@ The complete history (1.0.0 onward) is in `UM/02_Developer_Notes/CHANGELOG.md`.
 3. H2C buffers of 16 MiB do not complete on the bench.
 4. The PL design files (XSA, bitstream, hwh) are not included. HF lists them.
 5. Host-side verification uses emulated hardware. Bench acceptance follows the ATP.
+6. RoCEv2 bench bring-up still needs ConnectX Port A cabled to Port B and
+   `scripts/02_setup_network.sh` run; both ports previously read `flags=4099`
+   (no `RUNNING`), which is cabling, not software. The host-side path is fully
+   covered by TS-11 without hardware.
+7. The GPUDirect ring is processed in the GUI through `DspEngine`/`GpuFft`, with
+   the display slice copied VRAM->host (64Ki samples, 256 KiB per frame, not the
+   full 1 MiB). A fully zero-copy path would require `DspEngine` to accept
+   device pointers; that is the only remaining difference from the Holoscan
+   pipeline.

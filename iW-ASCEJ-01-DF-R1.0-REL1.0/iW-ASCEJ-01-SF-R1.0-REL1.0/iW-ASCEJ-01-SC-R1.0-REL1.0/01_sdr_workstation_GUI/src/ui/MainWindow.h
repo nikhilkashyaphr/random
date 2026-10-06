@@ -72,6 +72,7 @@ private slots:
     void onStart();
     void startBackendThenAcquire();
     void startUdpThenAcquire();
+    void startRoceThenAcquire();
     void onPause(bool paused);
     void onStop();
     void onToggleRecord(bool on);

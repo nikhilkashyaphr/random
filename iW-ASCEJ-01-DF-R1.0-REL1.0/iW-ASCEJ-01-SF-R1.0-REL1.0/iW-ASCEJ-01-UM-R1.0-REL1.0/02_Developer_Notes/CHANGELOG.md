@@ -1,5 +1,60 @@
 # Changelog
 
+## [1.2.6] — 2026-10-06
+
+RoCEv2 made usable and testable from the GUI. **GUI only.** The firmware, the
+helper applications and the driver are unchanged, and no board needs
+reflashing.
+
+### The GUI can now start the RoCEv2 receiver itself
+
+Selecting RoCEv2 and pressing Start previously worked only if the operator had
+already run `rdma_rx` in a terminal. Otherwise the GUI reported
+`cannot open /dev/shm/iqring` and left them to work out why.
+
+`BackendLauncher` already manages the C2H, H2C and UDP helpers, so the RoCEv2
+receiver is now one more managed process: `BackendMode::RoceRx` launches
+`reference/roce-iq-holoscan/rdma_rx`, or `rdma_rx_gpu` when the GPU backend is
+selected, building it on first use as the UDP receiver already was.
+
+A ring that already exists belongs to a receiver the operator started, so
+nothing is launched and the existing ring is used. Starting a second receiver
+is refused by name, because `rdma_rx` creates `/dev/shm/iqring` and dies on a
+ring it cannot own, and a second one would also find the `rdma_cm` port taken.
+
+### Four defects fixed
+
+| Defect | Effect |
+|---|---|
+| `CMakeLists.txt` evaluated `SDR_HAVE_CUDA` before setting it, and appended `GpuKernels.cu` after `add_executable()` consumed `PROJECT_SOURCES` | **The CUDA path could not be built at all.** `-DSDR_ENABLE_CUDA=ON` silently produced a CPU-only binary that then refused every GPUDirect ring, and the kernels were never compiled |
+| `RoceShmSource` never read `cfg.src.devicePath` | `--roce <path>` took its sample rate and centre from the named ring but streamed from `/dev/shm/iqring` — one ring's axes over another's data — and failed with `cannot open /dev/shm/iqring` when only the named ring existed |
+| `gpuring::kFrameMagic` was `0x4651524d30303031`, which no producer writes | Unused, so nothing was broken, but a frame-header check against it would have rejected every frame on the GPU path. The ABI value is `0x49515246524d4131` ("IQRFRMA1") |
+| The RoCEv2 ingest path had no automated coverage | It could only be exercised on a cabled bench, so it was not a regression gate |
+
+### TS-11: RoCEv2 tested with no hardware
+
+`TS/01_Host_Test_Suite/roce_emu` — 122 checks in four binaries, needing no NIC,
+no RDMA stack, no GPU and no board, only a writable `/dev/shm`.
+
+| Binary | Checks | Covers |
+|---|---|---|
+| `roce_ring_test` | 33 | `IQRING01` through the real `RoceShmSource` |
+| `roce_tap_test` | 28 | `RTAP`: dtypes, header metadata, seqlock tearing |
+| `gpu_math_test` | 35 | `GpuMathRef.h` against an independent DFT |
+| `roce_launch_test` | 26 | Starting the receiver from the GUI |
+
+The host suite is now 5 suites, 14 tests, 366 checks (was 4, 10, 244).
+
+### Where the processing runs
+
+All of it is in the GUI. `GpuIqPipeline` is deliberately **not** wired into the
+display: it returns a finished spectrum with a fixed Hann window, and
+duplicating the GUI's windows, calibration and five averaging modes in CUDA
+would give two implementations that drift — so the display changes on CPU/GPU
+toggle, which looks like hardware. GPU acceleration runs in `DspEngine` via
+`GpuFft`, which returns `|X|²` only and works for every source including the
+RoCEv2 GPU ring. See `ROCEV2_IN_GUI_TESTING.md`.
+
 ## [1.2.5] — 2026-09-27
 
 Why capture and transmit broke each other, and a GUI that works around it.

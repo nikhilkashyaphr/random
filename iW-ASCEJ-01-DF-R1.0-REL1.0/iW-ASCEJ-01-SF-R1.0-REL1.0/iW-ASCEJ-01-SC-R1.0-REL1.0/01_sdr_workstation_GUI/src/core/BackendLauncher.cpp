@@ -201,6 +201,7 @@ QString backendModeName(BackendMode m)
     case BackendMode::C2H:     return QStringLiteral("C2H");
     case BackendMode::H2C_C2H: return QStringLiteral("H2C_C2H");
     case BackendMode::UdpStream: return QStringLiteral("UDP");
+    case BackendMode::RoceRx:    return QStringLiteral("RoCEv2");
     }
     return QStringLiteral("unknown");
 }
@@ -372,6 +373,69 @@ QString BackendLauncher::buildUdpBinary(bool* ok)
     return out;
 }
 
+// ---------------------------------------------------------------------------
+// RoCEv2 receiver.
+//
+// The supplied stack under reference/roce-iq-holoscan owns the network side;
+// the GUI only reads the shared-memory ring it publishes. Starting it from
+// here is the difference between "select RoCEv2 and press Start" and "open a
+// terminal, run rdma_rx, then come back" -- and when nothing is publishing the
+// operator otherwise just sees "cannot open /dev/shm/iqring".
+//
+// The reference tree is vendored rather than built into backend/, so it is
+// looked up separately from backendDirectory().
+// ---------------------------------------------------------------------------
+QString BackendLauncher::roceDirectory()
+{
+    const QString exeDir = QCoreApplication::applicationDirPath();
+    const QStringList candidates = {
+        exeDir + QStringLiteral("/reference/roce-iq-holoscan"),
+        exeDir + QStringLiteral("/../reference/roce-iq-holoscan"),   // build/
+        QDir::currentPath() + QStringLiteral("/reference/roce-iq-holoscan"),
+    };
+    for (const QString& c : candidates) {
+        QDir d(c);
+        if (d.exists() && QFileInfo::exists(d.absoluteFilePath(QStringLiteral("Makefile"))))
+            return d.absolutePath();
+    }
+    return {};
+}
+
+QString BackendLauncher::roceReceiverPath(bool gpu)
+{
+    const QString dir = roceDirectory();
+    if (dir.isEmpty()) return {};
+    const QString p = dir + (gpu ? QStringLiteral("/rdma_rx_gpu")
+                                 : QStringLiteral("/rdma_rx"));
+    const QFileInfo fi(p);
+    return (fi.exists() && fi.isExecutable()) ? p : QString();
+}
+
+QString BackendLauncher::buildRoceReceiver(bool gpu, bool* ok)
+{
+    if (ok) *ok = false;
+    const QString dir = roceDirectory();
+    if (dir.isEmpty())
+        return QStringLiteral("reference/roce-iq-holoscan not found");
+    QProcess p;
+    p.setWorkingDirectory(dir);
+    p.setProcessChannelMode(QProcess::MergedChannels);
+    // `make gpu` builds rdma_rx_gpu, which additionally needs the CUDA
+    // toolkit; plain `make` builds rdma_rx and the scale helpers.
+    p.start(QStringLiteral("make"),
+            gpu ? QStringList{QStringLiteral("gpu")} : QStringList{});
+    if (!p.waitForStarted(3000)) return QStringLiteral("could not run `make`");
+    p.waitForFinished(300000);
+    const QString out = QString::fromLocal8Bit(p.readAll());
+    if (ok) *ok = !roceReceiverPath(gpu).isEmpty();
+    return out;
+}
+
+bool BackendLauncher::roceRingPresent()
+{
+    return QFileInfo::exists(roceRingPath());
+}
+
 QString BackendLauncher::buildBinaries(bool* ok)
 {
     if (ok) *ok = false;
@@ -500,6 +564,82 @@ void BackendLauncher::start(const sdr::BackendConfig& cfg)
         emit statusMessage(QStringLiteral(
             "Note: %1 earlier helper process(es) have not exited yet (stuck in the "
             "driver); the device may still be busy.").arg(m_reaping.size()));
+
+    if (cfg.mode == BackendMode::RoceRx) {
+        // The ring is checked FIRST, before the binary. If a receiver is
+        // already publishing, whether this tree has a built receiver is
+        // irrelevant and "run `make`" is the wrong instruction -- the
+        // operator needs to be told to use the ring that is already there.
+        // Refuse rather than collide: rdma_rx creates /dev/shm/iqring and dies
+        // on a ring it cannot own, and a second receiver would also find the
+        // rdma_cm port taken.
+        if (roceRingPresent()) {
+            emit startFailed(QStringLiteral(
+                "%1 already exists, so a receiver is already publishing. "
+                "Stop it before starting another, or select RoCEv2 and press "
+                "Start to read the ring it is already filling.")
+                .arg(roceRingPath()));
+            return;
+        }
+
+        const QString bin = roceReceiverPath(cfg.roceGpu);
+        if (bin.isEmpty()) {
+            emit startFailed(QStringLiteral(
+                "RoCEv2 receiver not built. Expected %1 — run `make%2` in "
+                "reference/roce-iq-holoscan.")
+                .arg(cfg.roceGpu ? QStringLiteral("rdma_rx_gpu")
+                                 : QStringLiteral("rdma_rx"),
+                     cfg.roceGpu ? QStringLiteral(" gpu") : QString()));
+            return;
+        }
+
+        QStringList args;
+        if (!cfg.roceBindAddr.isEmpty())
+            args << QStringLiteral("-a") << cfg.roceBindAddr;
+        args << QStringLiteral("-p") << QString::number(cfg.rocePort);
+        if (!cfg.roceTransport.isEmpty())
+            args << QStringLiteral("-w") << cfg.roceTransport;
+
+        emit statusMessage(QStringLiteral("Starting RoCEv2 receiver (%1) on port %2…")
+            .arg(cfg.roceGpu ? QStringLiteral("rdma_rx_gpu, GPUDirect")
+                             : QStringLiteral("rdma_rx, host ring"))
+            .arg(cfg.rocePort));
+        QString err;
+        if (!launchOne(QStringLiteral("RoCEv2 receiver"), bin, args,
+                       BackendProcess::RoceRx, &err)) {
+            teardown();
+            emit startFailed(QStringLiteral(
+                "RoCEv2 receiver failed to start: %1\n\n"
+                "It needs the rdma_cm and ib_core modules loaded and an IP "
+                "configured on the listening port — see "
+                "reference/roce-iq-holoscan/scripts/02_setup_network.sh.")
+                .arg(err));
+            return;
+        }
+        if (!m_readyTimer) {
+            m_readyTimer = new QTimer(this);
+            m_readyTimer->setSingleShot(true);
+        }
+        m_readyTimer->disconnect(this);
+        connect(m_readyTimer, &QTimer::timeout, this, [this] {
+            if (!isRunning() || m_stopping) return;
+            // Readiness here means the ring exists: the receiver creates it
+            // before it listens, so this is the thing the GUI actually needs.
+            if (!roceRingPresent()) {
+                emit statusMessage(QStringLiteral(
+                    "RoCEv2 receiver started but %1 has not appeared yet.")
+                    .arg(roceRingPath()));
+                return;
+            }
+            emit statusMessage(QStringLiteral("RoCEv2 receiver ready — ring %1")
+                                   .arg(roceRingPath()));
+            // becameReady carries the path the source should read; for this
+            // transport that is the ring, not a capture FIFO.
+            emit becameReady(roceRingPath());
+        });
+        m_readyTimer->start(kReadySettleMs);
+        return;
+    }
 
     if (cfg.mode == BackendMode::UdpStream) {
         const QString bin = udpBinaryPath();
@@ -915,7 +1055,11 @@ void BackendLauncher::reopenH2c(QProcess* p, const QString& why)
 
 void BackendLauncher::resetDevice(const QString& why)
 {
-    if (m_stopping || !isRunning() || m_cfg.mode == BackendMode::UdpStream) return;
+    // Neither the UDP receiver nor the RoCEv2 receiver is a C2H capture
+    // helper, so the capture watchdog does not apply to them.
+    if (m_stopping || !isRunning()
+     || m_cfg.mode == BackendMode::UdpStream
+     || m_cfg.mode == BackendMode::RoceRx) return;
     const BackendConfig cfg = m_cfg;       // incl. the buffer size that works
     m_resetting = true;
     m_resetWhy = why;

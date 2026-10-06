@@ -11,6 +11,7 @@ so it always tests the delivered sources.
 
 ```bash
 ./01_Host_Test_Suite/run_all.sh        # ≈ 4 minutes; expect "ALL TESTS: PASS"
+#                                      # 5 suites, 14 tests, 366 checks
 ```
 
 | Suite | Tests | Checks |
@@ -19,7 +20,7 @@ so it always tests the delivered sources.
 | `pcie_emu/` | GUI `RfdcControl` ↔ emulated BAR ↔ real `pcie_cfg.c`, firmware 1.2.1 and 1.2.0 | 17 + 17 |
 | `gui/` | Transmit path, simulated loopback, control window, whole application in simulation | 20 + 13 + 39 + 4 |
 | `h2c_emu/` | Real `iwfg_h2c`; the send-and-receive chain with fault injection; whole application live, with an `LD_PRELOAD` fake card | 18 + 73 + 26 |
-| `roce_emu/` | RoCEv2 ingest: the real `RoceShmSource` against synthetic `IQRING01` and `RTAP` rings, plus the GPU spectrum arithmetic checked on the CPU | 33 + 28 + 35 |
+| `roce_emu/` | RoCEv2: the real `RoceShmSource` against synthetic `IQRING01` and `RTAP` rings, the GPU spectrum arithmetic checked on the CPU, and starting the receiver from the GUI | 33 + 28 + 35 + 26 |
 
 `01_Host_Test_Suite/README.md` describes each test in detail. If you move
 the folders, override the source locations with `-DPKG_GUI=... -DPKG_FW=...`,

@@ -11,7 +11,7 @@ project(sdr_roce_tests LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
-find_package(Qt5 REQUIRED COMPONENTS Core)
+find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
 find_package(Threads REQUIRED)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../pkg_paths.cmake)
@@ -41,7 +41,15 @@ add_executable(gpu_math_test gpu_math_test.cpp
     ${GUI}/core/GpuMathRef.h)
 target_link_libraries(gpu_math_test Qt5::Core Threads::Threads)
 
-foreach(t roce_ring_test roce_tap_test gpu_math_test)
+# Starting the receiver from the GUI. BackendLauncher needs Qt Widgets (it
+# reports through the same notice machinery the window uses) and the GUI source
+# directory, which is how roceDirectory() finds the vendored RoCEv2 tree.
+add_executable(roce_launch_test roce_launch_test.cpp
+    ${GUI}/core/BackendLauncher.cpp ${GUI}/core/BackendLauncher.h)
+target_compile_definitions(roce_launch_test PRIVATE SDR_GUI_DIR="${PKG_GUI}")
+target_link_libraries(roce_launch_test Qt5::Widgets Threads::Threads)
+
+foreach(t roce_ring_test roce_tap_test gpu_math_test roce_launch_test)
     target_compile_options(${t} PRIVATE -Wall -Wextra)
 endforeach()
 
@@ -49,3 +57,6 @@ enable_testing()
 add_test(NAME roce_host_ring  COMMAND roce_ring_test)
 add_test(NAME roce_tap_ring   COMMAND roce_tap_test)
 add_test(NAME roce_gpu_math   COMMAND gpu_math_test)
+add_test(NAME roce_launch     COMMAND roce_launch_test)
+# BackendLauncher is UI-adjacent, so the launch test needs a platform plugin.
+set_tests_properties(roce_launch PROPERTIES ENVIRONMENT QT_QPA_PLATFORM=offscreen)

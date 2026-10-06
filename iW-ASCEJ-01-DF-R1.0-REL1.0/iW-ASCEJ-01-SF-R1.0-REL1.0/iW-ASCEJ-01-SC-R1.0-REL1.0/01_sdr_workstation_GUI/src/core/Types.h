@@ -349,6 +349,15 @@ struct SystemConfig {
     QString udpInterface;            ///< non-empty selects --raw capture mode
     QString udpFifo      = QStringLiteral("/tmp/iwfg_c2h.fifo");
 
+    // --- RoCEv2 live stream ---------------------------------------------
+    /// Set when the Ethernet/RoCEv2 transport is chosen. The main window
+    /// starts reference/roce-iq-holoscan/rdma_rx itself when nothing is
+    /// publishing yet, so the operator never runs a command by hand. When a
+    /// receiver is already running its ring is used as it is.
+    bool    roceTransport = false;
+    int     rocePort      = 7471;    ///< rdma_cm service port (DEFAULT_TCP_PORT)
+    QString roceBindAddr;            ///< empty = 0.0.0.0 (rdma_rx's own default)
+
     /// True when the launcher's PCIe pre-flight inserted the iwfg module for
     /// this session. The main window unloads it on exit only when this is set,
     /// so a module the operator had already loaded is left untouched.

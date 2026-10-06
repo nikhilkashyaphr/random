@@ -1,5 +1,5 @@
 # iW-ASCEJ-01 — iWave SDR Platform (ZU47DR RFSoC)
-## Delivery package R1.0 · REL1.0 (software release 1.2.5)
+## Delivery package R1.0 · REL1.0 (software release 1.2.6)
 
 This is the formal delivery package for the iWave SDR platform built on the
 AMD/Xilinx Zynq UltraScale+ RFSoC **xczu47dr-ffvg1517-2-i**. It holds the
@@ -27,7 +27,7 @@ Every folder is named `iW-ASCEJ-01-<code>-R1.0-REL1.0`:
 | └ **TS** | `iW-ASCEJ-01-TS-R1.0-REL1.0` | **Test Suite**: host-side automated tests and verification scripts |
 
 **R1.0** is the document and folder revision. **REL1.0** is the package
-release. REL1.0 carries software version **1.2.5**.
+release. REL1.0 carries software version **1.2.6**.
 
 Short paths are used in the documents for readability:
 
@@ -81,7 +81,7 @@ installation, operation and troubleshooting in full.
 | Package integrity (`MANIFEST.sha256`) | PASS |
 | Firmware source set (37 files) and firmware ↔ GUI ↔ CLI contract (`audit_sync.sh`, 13 checks) | PASS |
 | GUI built from `SC` with Qt 5.15 | PASS |
-| Automated suites from `TS`: 10 tests, **244 checks**, run against the sources in this package | **ALL PASS** |
+| Automated suites from `TS`: 14 tests, **366 checks**, run against the sources in this package | **ALL PASS** |
 
 The details are in `AT/iW-ASCEJ-01-ATR-R1.0-REL1.0.xlsx` and `AT/01_Logs`.
 Bench (hardware) acceptance is recorded with the ATP on the target board.

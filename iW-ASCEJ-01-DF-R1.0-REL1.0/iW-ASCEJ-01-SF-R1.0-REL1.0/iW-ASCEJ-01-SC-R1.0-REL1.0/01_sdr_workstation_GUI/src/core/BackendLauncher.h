@@ -66,7 +66,8 @@ namespace sdr {
 enum class BackendMode {
     C2H,        ///< capture only: card -> FIFO -> workstation
     H2C_C2H,    ///< loopback: workstation-fed FIFO -> card -> FIFO -> workstation
-    UdpStream   ///< 100G UDP -> iwfg_c2h -> FIFO -> workstation
+    UdpStream,  ///< 100G UDP -> iwfg_c2h -> FIFO -> workstation
+    RoceRx      ///< RoCEv2 -> rdma_rx (or rdma_rx_gpu) -> shm ring -> workstation
 };
 
 QString backendModeName(BackendMode m);
@@ -152,11 +153,27 @@ struct BackendConfig {
     int         udpRxCpu     = -1;           ///< -1 = unpinned
     int         udpWrCpu     = -1;
     bool        udpHugepages = false;
+
+    // --- RoCEv2 receiver (reference/roce-iq-holoscan/rdma_rx) ------------
+    //
+    // The receiver owns the network side and publishes the shared-memory ring
+    // RoceShmSource reads. Its ring path is NOT configurable: rdma_rx hard-codes
+    // RING_SHM_NAME "/iqring", so a launched receiver always publishes at
+    // /dev/shm/iqring and the source must be pointed there.
+    bool        roceGpu      = false;        ///< true selects rdma_rx_gpu (GPUDirect)
+    int         rocePort     = 7471;         ///< rdma_cm service port (DEFAULT_TCP_PORT)
+    QString     roceBindAddr;                ///< empty = 0.0.0.0 (rdma_rx default)
+    /// rdma_rx -w mode: "send", "write" or "write_imm" (its own default).
+    QString     roceTransport = QStringLiteral("write_imm");
 };
+
+/// Where a launched rdma_rx always publishes. Not configurable -- see
+/// BackendConfig::roceGpu above.
+inline QString roceRingPath() { return QStringLiteral("/dev/shm/iqring"); }
 
 /// One managed child process.
 struct BackendProcess {
-    enum Role { Capture, Playback, Udp };
+    enum Role { Capture, Playback, Udp, RoceRx };
     QString    label;       ///< "C2H capture", "H2C playback"
     QString    program;     ///< the helper itself (not a line-buffering wrapper)
     QStringList args;
@@ -211,6 +228,18 @@ public:
     /// backend/bin alongside the others.
     static QString udpBinaryPath();
     static QString buildUdpBinary(bool* ok);
+
+    /// Directory holding the supplied RoCEv2 stack (reference/roce-iq-holoscan),
+    /// found beside the executable or in the source tree. Empty if absent.
+    static QString roceDirectory();
+    /// The built receiver: rdma_rx, or rdma_rx_gpu when `gpu` is set. Empty
+    /// until `make` (or `make gpu`) has run.
+    static QString roceReceiverPath(bool gpu);
+    /// Build it on first use. Returns the build log; `ok` reports success.
+    static QString buildRoceReceiver(bool gpu, bool* ok);
+    /// True when a ring is already being published, i.e. a receiver is
+    /// running and launching another would collide on the shm object.
+    static bool roceRingPresent();
 
     /// True when nothing else holds the UDP port. Checked before launching so
     /// a clash is reported as a clash, not as an opaque immediate exit.
