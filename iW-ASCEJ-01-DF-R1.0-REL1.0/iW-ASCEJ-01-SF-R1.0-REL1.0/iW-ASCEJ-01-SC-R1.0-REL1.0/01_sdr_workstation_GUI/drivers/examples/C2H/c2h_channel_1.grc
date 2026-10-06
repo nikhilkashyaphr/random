@@ -1,0 +1,506 @@
+options:
+  parameters:
+    author: ''
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    cmake_opt: ''
+    comment: ''
+    copyright: ''
+    description: ''
+    gen_cmake: 'On'
+    gen_linking: dynamic
+    generate_options: qt_gui
+    hier_block_src_path: '.:'
+    id: sdr
+    max_nouts: '0'
+    output_language: python
+    placement: (0,0)
+    qt_qss_theme: ''
+    realtime_scheduling: ''
+    run: 'True'
+    run_command: '{python} -u {filename}'
+    run_options: prompt
+    sizing_mode: fixed
+    thread_safe_setters: ''
+    title: Not titled yet
+    window_size: (1000,1000)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [8, 8]
+    rotation: 0
+    state: enabled
+
+blocks:
+- name: samp_rate
+  id: variable
+  parameters:
+    comment: ''
+    value: '300250000'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [192, 12.0]
+    rotation: 0
+    state: enabled
+- name: epy_block_0
+  id: epy_block
+  parameters:
+    _source_code: "import numpy as np\nimport os\nimport errno\nimport select\nfrom\
+      \ gnuradio import gr\n\n\nclass blk(gr.sync_block):\n    \"\"\"\n    IWave DMA\
+      \ FIFO: interleaved int16 I/Q (SC16) -> complex64.\n\n    Live      : reads\
+      \ ONLY what it emits, so surplus stays in the kernel pipe\n                and\
+      \ the C writer backpressures -> latency bounded to pipe depth.\n    No glitch\
+      \ : single-phase, frame-aligned, contiguous emit; output written\n         \
+      \       exactly once; the stream is never chopped mid-flight.\n    Safety  \
+      \  : if surplus ever piles up in RAM anyway (writer not blocking),\n       \
+      \         ONE rare frame-aligned flush trims latency -> at most a single\n \
+      \               FFT window disturbed, not every one.\n    \"\"\"\n    IQ = 4\
+      \  # bytes per complex sample (int16 I + int16 Q)\n\n    def __init__(self,\
+      \ samp_rate=150.25e6, fifo_path=\"/tmp/iwfg_fifo\",\n                 normalize=True,\
+      \ frame=8192, max_latency_ms=8.0):\n        gr.sync_block.__init__(self, name=\"\
+      IWave DMA FIFO\",\n                               in_sig=None, out_sig=[np.complex64])\n\
+      \        self.samp_rate      = float(samp_rate)\n        self.fifo_path    \
+      \  = fifo_path\n        self.normalize      = bool(normalize)\n        self.frame\
+      \          = int(frame)          # emit/drop granularity (>= sink fftsize)\n\
+      \        self.max_latency_ms = float(max_latency_ms)\n        self.fd  = None\n\
+      \        self.buf = bytearray()\n        self.set_output_multiple(self.frame)\n\
+      \n    def _high_water(self):\n        hw  = int(self.samp_rate * self.max_latency_ms\
+      \ * 1e-3)\n        hw -= hw % self.frame\n        return max(hw, self.frame)\n\
+      \n    def _reopen(self):\n        try:\n            if self.fd is not None:\n\
+      \                os.close(self.fd)\n        except OSError:\n            pass\n\
+      \        try:\n            self.fd = os.open(self.fifo_path, os.O_RDONLY | os.O_NONBLOCK)\n\
+      \        except OSError:\n            self.fd = None\n\n    def work(self, input_items,\
+      \ output_items):\n        out   = output_items[0]\n        n_out = len(out)\n\
+      \        if self.fd is None:\n            return 0\n\n        need = n_out *\
+      \ self.IQ\n        have = len(self.buf)\n\n        # --- read ONLY the shortfall;\
+      \ never drain the pipe -----------------\n        # Leaving surplus in the kernel\
+      \ pipe keeps the writer backpressured,\n        # which is exactly what bounds\
+      \ latency AND keeps the stream continuous.\n        if have < need:\n      \
+      \      r, _, _ = select.select([self.fd], [], [], 0.050)\n            if r:\n\
+      \                try:\n                    chunk = os.read(self.fd, need - have)\n\
+      \                    if chunk:\n                        self.buf += chunk\n\
+      \                    elif have < self.IQ:\n                        self._reopen()\
+      \             # writer closed -> reattach\n                        return 0\n\
+      \                except OSError as e:\n                    if getattr(e, \"\
+      errno\", None) not in (errno.EAGAIN,\n                                     \
+      \                     errno.EWOULDBLOCK):\n                        print(f\"\
+      [IWave] read error: {e}\")\n\n        # --- safety valve: rare, single, frame-aligned\
+      \ latency trim --------\n        hw = self._high_water()\n        if len(self.buf)\
+      \ // self.IQ > hw:\n            keep  = self.frame * 2\n            drop  =\
+      \ (len(self.buf) // self.IQ) - keep\n            drop -= drop % self.frame\n\
+      \            if drop > 0:\n                del self.buf[:drop * self.IQ]\n\n\
+      \        # --- emit ONE contiguous, frame-aligned block (written once) -------\n\
+      \        n_avail = len(self.buf) // self.IQ\n        n_emit  = min(n_avail,\
+      \ n_out)\n        n_emit -= n_emit % self.frame\n        if n_emit == 0:\n \
+      \           return 0\n\n        nb  = n_emit * self.IQ\n        raw = np.frombuffer(bytes(self.buf[:nb]),\
+      \ dtype=np.int16)\n        i = raw[0::2].astype(np.float32)\n        q = raw[1::2].astype(np.float32)\n\
+      \        if self.normalize:\n            i *= 1.0 / 32768.0\n            q *=\
+      \ 1.0 / 32768.0\n        out[:n_emit] = i + 1j * q\n\n        del self.buf[:nb]\n\
+      \        return n_emit\n\n    def start(self):\n        print(f\"[IWave] Opening\
+      \ FIFO: {self.fifo_path}\")\n        try:\n            self.fd = os.open(self.fifo_path,\
+      \ os.O_RDONLY | os.O_NONBLOCK)\n        except FileNotFoundError:\n        \
+      \    print(f\"[IWave] FIFO not found: {self.fifo_path} (start C app first)\"\
+      )\n            return False\n        except Exception as e:\n            print(f\"\
+      [IWave] open error: {e}\")\n            return False\n        self.buf = bytearray()\n\
+      \        print(\"[IWave] FIFO opened (non-blocking)\")\n        return True\n\
+      \n    def stop(self):\n        if self.fd is not None:\n            os.close(self.fd)\n\
+      \            self.fd = None\n        return True\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    fifo_path: '"/tmp/iwfg_fifo"'
+    frame: '8192'
+    max_latency_ms: '8.0'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    normalize: 'True'
+    samp_rate: '300250000'
+  states:
+    _io_cache: '(''IWave DMA FIFO'', ''blk'', [(''samp_rate'', ''150250000.0''), (''fifo_path'',
+      "''/tmp/iwfg_fifo''"), (''normalize'', ''True''), (''frame'', ''8192''), (''max_latency_ms'',
+      ''8.0'')], [], [(''0'', ''complex'', 1)], ''\n    IWave DMA FIFO: interleaved
+      int16 I/Q (SC16) -> complex64.\n\n    Live      : reads ONLY what it emits,
+      so surplus stays in the kernel pipe\n                and the C writer backpressures
+      -> latency bounded to pipe depth.\n    No glitch : single-phase, frame-aligned,
+      contiguous emit; output written\n                exactly once; the stream is
+      never chopped mid-flight.\n    Safety    : if surplus ever piles up in RAM anyway
+      (writer not blocking),\n                ONE rare frame-aligned flush trims latency
+      -> at most a single\n                FFT window disturbed, not every one.\n    '',
+      [''fifo_path'', ''frame'', ''max_latency_ms'', ''normalize'', ''samp_rate''])'
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [352, 156.0]
+    rotation: 0
+    state: true
+- name: epy_block_1
+  id: epy_block
+  parameters:
+    _source_code: "\"\"\"\nRF Metrics Sink \u2014 GNU Radio Python Embedded Block\
+      \ (v8, final)\nIEEE 1241 / 1057 metrics. Compact monochrome top-right panel.\n\
+      \nInputs : 1 x complex64\nOutputs: none (sink)\n\"\"\"\n\nimport numpy as np\n\
+      import gnuradio.gr as gr\n\ntry:\n    from PyQt5.QtWidgets import (QApplication,\
+      \ QWidget, QGridLayout,\n                                 QVBoxLayout, QHBoxLayout,\
+      \ QLabel)\n    from PyQt5.QtCore import QTimer, Qt\n    HAS_QT = True\nexcept\
+      \ ImportError:\n    HAS_QT = False\n\n\n# \u2500\u2500 DSP helpers \u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\ndef make_window(name, n):\n    name =\
+      \ name.lower()\n    if name == \"hann\":\n        w = np.hanning(n)\n    elif\
+      \ name == \"blackman\":\n        w = np.blackman(n)\n    elif name in (\"flat\"\
+      , \"flattop\"):\n        a = [0.21557895, 0.41663158, 0.277263158, 0.083578947,\
+      \ 0.006947368]\n        k = np.arange(n)\n        w = sum((-1)**i * a[i] * np.cos(2*np.pi*i*k/n)\
+      \ for i in range(5))\n    else:\n        w = np.hanning(n)\n    nenbw = n *\
+      \ np.sum(w**2) / np.sum(w)**2          # noise bandwidth, bins\n    return (w\
+      \ / np.sum(w)).astype(np.float32), float(nenbw)\n\n\ndef welch_psd(frames, w):\n\
+      \    acc = np.zeros(frames.shape[1], dtype=np.float64)\n    for f in frames:\n\
+      \        acc += np.abs(np.fft.fft(f * w)) ** 2\n    return np.fft.fftshift(acc\
+      \ / frames.shape[0])     # DC at centre bin N//2\n\n\ndef freq_axis(n, fs):\n\
+      \    return np.fft.fftshift(np.fft.fftfreq(n, d=1.0/fs))\n\n\ndef _parabolic(psd,\
+      \ k):\n    \"\"\"Sub-bin peak refinement (cosmetic; affects displayed freq only).\"\
+      \"\"\n    if k <= 0 or k >= len(psd) - 1:\n        return float(k)\n    a =\
+      \ np.log(max(psd[k-1], 1e-30))\n    b = np.log(max(psd[k],   1e-30))\n    c\
+      \ = np.log(max(psd[k+1], 1e-30))\n    d = a - 2*b + c\n    return k + (0.5 *\
+      \ (a - c) / d if abs(d) > 1e-20 else 0.0)\n\n\n# \u2500\u2500 metric engine\
+      \ \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\ndef compute_metrics(psd, freqs, fs, n_harmonics,\
+      \ nenbw,\n                    dc_guard_bins, return_debug=False):\n    N = len(psd)\n\
+      \    eps = 1e-30\n    guard = int(np.ceil(1.5 * nenbw)) + 1            # honest,\
+      \ window-derived\n    dcc = N // 2                                     # DC\
+      \ bin after fftshift\n    lo = max(0, dcc - dc_guard_bins)\n    hi = min(N,\
+      \ dcc + dc_guard_bins + 1)\n\n    # \u2500\u2500 exclude DC region, THEN locate\
+      \ the fundamental \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n    search = psd.copy()\n\
+      \    search[lo:hi] = 0.0\n    fund_bin = int(np.argmax(search))\n    fund_hz\
+      \ = float(np.interp(_parabolic(psd, fund_bin),\n                           \
+      \   np.arange(N), freqs))\n\n    def _mask(c):\n        m = np.zeros(N, dtype=bool)\n\
+      \        m[max(0, c-guard):min(N-1, c+guard)+1] = True\n        return m\n\n\
+      \    mask_sig = _mask(fund_bin)\n    mask_dc = np.zeros(N, dtype=bool)\n   \
+      \ mask_dc[lo:hi] = True\n\n    # \u2500\u2500 harmonics folded into [-fs/2,\
+      \ +fs/2] \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\n    harm_masks, harm_pwrs = [], []\n    for\
+      \ h in range(2, n_harmonics + 2):\n        hf = (fund_hz * h + fs/2) % fs -\
+      \ fs/2\n        hb = int(np.argmin(np.abs(freqs - hf)))\n        m = _mask(hb)\n\
+      \        harm_masks.append(m)\n        harm_pwrs.append(float(psd[m].sum()))\n\
+      \    mask_harm = (np.logical_or.reduce(harm_masks)\n                 if harm_masks\
+      \ else np.zeros(N, dtype=bool))\n    mask_noise = ~(mask_sig | mask_harm | mask_dc)\n\
+      \n    P_sig = float(psd[mask_sig].sum())\n    P_harm = float(sum(harm_pwrs))\n\
+      \    P_noise = float(psd[mask_noise].mean()) * int(mask_noise.sum())\n\n   \
+      \ spur = psd.copy()\n    spur[mask_sig | mask_dc] = 0.0                   #\
+      \ SFDR spur may be a harmonic\n    P_spur = float(spur.max())\n\n    snr = 10*np.log10(max(P_sig,\
+      \ eps) / max(P_noise, eps))\n    sfdr = 10*np.log10(max(P_sig, eps) / max(P_spur,\
+      \ eps))\n    sinad = 10*np.log10(max(P_sig, eps) / max(P_noise + P_harm, eps))\n\
+      \n    out = {\n        \"fundamental_hz\": round(fund_hz, 1),\n        \"snr_db\"\
+      : round(snr, 2),\n        \"sfdr_dbc\": round(sfdr, 2),\n        \"sinad_db\"\
+      : round(sinad, 2),\n        \"enob\": round((sinad - 1.76) / 6.02, 3),\n   \
+      \     \"thd_dbc\": round(10*np.log10(max(P_harm, eps)/max(P_sig, eps)), 2),\n\
+      \        \"noise_floor_dbfs\": round(10*np.log10(max(P_noise/N, eps)), 2),\n\
+      \    }\n    if return_debug:\n        order = np.argsort(psd)[::-1][:5]\n  \
+      \      out[\"_peaks\"] = [(round(freqs[i]/1e6, 4),\n                       \
+      \   round(10*np.log10(max(psd[i], eps)), 1)) for i in order]\n    return out\n\
+      \n\n# \u2500\u2500 compact top-right panel \u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\n_BG = \"#1b1b1b\"; _DIM = \"#777\"; _VAL = \"#e0e0e0\";\
+      \ _ACC = \"#4caf50\"\n\nclass RFPanel(QWidget):\n    _ROWS = [(\"fundamental_hz\"\
+      , \"Fund\", \"MHz\"), (\"snr_db\", \"SNR\", \"dB\"),\n             (\"sfdr_dbc\"\
+      , \"SFDR\", \"dBc\"), (\"sinad_db\", \"SINAD\", \"dB\"),\n             (\"enob\"\
+      , \"ENOB\", \"b\"), (\"thd_dbc\", \"THD\", \"dBc\"),\n             (\"noise_floor_dbfs\"\
+      , \"NF\", \"dBFS\")]\n\n    def __init__(self, fs):\n        super().__init__(None,\
+      \ Qt.Window | Qt.FramelessWindowHint |\n                         Qt.WindowStaysOnTopHint)\n\
+      \        self.setFixedWidth(175)\n        self.setStyleSheet(f\"background:{_BG};\"\
+      )\n        self._drag = None\n        lay = QVBoxLayout(self); lay.setContentsMargins(10,\
+      \ 8, 10, 8); lay.setSpacing(4)\n\n        top = QHBoxLayout()\n        t = QLabel(\"\
+      RF METRICS\")\n        t.setStyleSheet(f\"color:{_ACC};font:bold 10px Consolas;letter-spacing:1px;\"\
+      )\n        x = QLabel(\"\xD7\"); x.setStyleSheet(f\"color:{_DIM};font:bold 12px\
+      \ Consolas;\")\n        x.mousePressEvent = lambda e: self.close()\n       \
+      \ top.addWidget(t); top.addStretch(); top.addWidget(x)\n        lay.addLayout(top)\n\
+      \n        f = QLabel(f\"Fs {fs/1e6:.2f} MHz\")\n        f.setStyleSheet(f\"\
+      color:{_DIM};font:8px Consolas;\")\n        lay.addWidget(f)\n\n        g =\
+      \ QGridLayout(); g.setSpacing(3); self._v = {}\n        for r, (k, l, u) in\
+      \ enumerate(self._ROWS):\n            a = QLabel(l); a.setStyleSheet(f\"color:{_DIM};font:10px\
+      \ Consolas;\")\n            b = QLabel(\"\u2014\"); b.setStyleSheet(f\"color:{_VAL};font:bold\
+      \ 11px Consolas;\")\n            b.setAlignment(Qt.AlignRight | Qt.AlignVCenter)\n\
+      \            c = QLabel(u); c.setStyleSheet(f\"color:{_DIM};font:8px Consolas;\"\
+      )\n            g.addWidget(a, r, 0); g.addWidget(b, r, 1); g.addWidget(c, r,\
+      \ 2)\n            self._v[k] = b\n        lay.addLayout(g)\n\n        self._cnt\
+      \ = QLabel(\"\u25CF 0\")\n        self._cnt.setStyleSheet(f\"color:{_ACC};font:8px\
+      \ Consolas;\")\n        lay.addWidget(self._cnt)\n        self._n = 0\n\n  \
+      \  def refresh(self, m):\n        self._n += 1\n        for k, w in self._v.items():\n\
+      \            val = m.get(k)\n            if val is None:\n                continue\n\
+      \            if k == \"fundamental_hz\":\n                w.setText(f\"{abs(val)/1e6:.3f}\"\
+      )\n            elif k == \"enob\":\n                w.setText(f\"{val:.2f}\"\
+      )\n            else:\n                w.setText(f\"{val:.1f}\")\n        self._cnt.setText(f\"\
+      \u25CF {self._n}\")\n\n    def showEvent(self, e):\n        s = QApplication.primaryScreen().availableGeometry()\n\
+      \        self.move(s.right() - self.width() - 16, s.top() + 16)\n        super().showEvent(e)\n\
+      \n    def mousePressEvent(self, e):\n        if e.button() == Qt.LeftButton:\n\
+      \            self._drag = e.globalPos() - self.frameGeometry().topLeft()\n \
+      \   def mouseMoveEvent(self, e):\n        if self._drag is not None and e.buttons()\
+      \ & Qt.LeftButton:\n            self.move(e.globalPos() - self._drag)\n    def\
+      \ mouseReleaseEvent(self, e):\n        self._drag = None\n\n\n# \u2500\u2500\
+      \ GNU Radio block \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\
+      \u2500\u2500\u2500\u2500\u2500\u2500\u2500\nclass blk(gr.sync_block):\n    \"\
+      \"\"RF Metrics Sink: 1x complex64 in, small top-right dashboard.\"\"\"\n\n \
+      \   def __init__(self, sample_rate=150.25e6, fft_size=4096, avg_frames=16,\n\
+      \                 n_harmonics=5, window_type=\"flat\", gui_refresh_ms=500,\n\
+      \                 dc_guard_bins=8, debug_peaks=False):\n        gr.sync_block.__init__(self,\
+      \ name=\"RF Metrics Sink\",\n                               in_sig=[np.complex64],\
+      \ out_sig=[])\n        assert fft_size > 0 and not (fft_size & (fft_size-1)),\
+      \ \\\n            \"fft_size must be a power of 2\"\n        self._fs = float(sample_rate)\n\
+      \        self._N = int(fft_size)\n        self._K = int(avg_frames)\n      \
+      \  self._nh = int(n_harmonics)\n        self._rms = int(gui_refresh_ms)\n  \
+      \      self._dcg = int(dc_guard_bins)\n        self._dbg = bool(debug_peaks)\n\
+      \n        self._win, self._nenbw = make_window(window_type, self._N)\n     \
+      \   self._freqs = freq_axis(self._N, self._fs)\n\n        self._buf = np.zeros((self._K,\
+      \ self._N), dtype=np.complex64)\n        self._bhead = 0\n        self._acc\
+      \ = np.empty(0, dtype=np.complex64)      # cross-call carry (< N)\n\n      \
+      \  self.metrics = {k: None for k in\n                        (\"fundamental_hz\"\
+      , \"snr_db\", \"sfdr_dbc\", \"sinad_db\",\n                         \"enob\"\
+      , \"thd_dbc\", \"noise_floor_dbfs\")}\n        self._panel = None\n        if\
+      \ HAS_QT:\n            QTimer.singleShot(600, self._build_panel)\n\n    def\
+      \ _build_panel(self):\n        try:\n            if not QApplication.instance():\n\
+      \                return\n            self._panel = RFPanel(self._fs)\n     \
+      \       self._panel.setWindowTitle(\"RF Metrics\")\n            self._panel.show()\n\
+      \            t = QTimer(self._panel)\n            t.setInterval(self._rms)\n\
+      \            t.timeout.connect(lambda: self._panel.refresh(self.metrics))\n\
+      \            t.start()\n        except Exception as e:\n            print(f\"\
+      [RF Metrics Sink] GUI error: {e}\")\n\n    def work(self, input_items, output_items):\n\
+      \        raw = input_items[0]\n        s = np.concatenate((self._acc, raw))\
+      \ if self._acc.size else raw\n        n = len(s)\n        idx = 0\n        #\
+      \ drain ALL complete frames -> carry stays < one frame (no leak)\n        while\
+      \ idx + self._N <= n:\n            self._buf[self._bhead] = s[idx:idx + self._N]\n\
+      \            self._bhead += 1\n            idx += self._N\n            if self._bhead\
+      \ == self._K:                    # full ring -> compute once\n             \
+      \   self._bhead = 0\n                psd = welch_psd(self._buf, self._win)\n\
+      \                m = compute_metrics(psd, self._freqs, self._fs, self._nh,\n\
+      \                                    self._nenbw, self._dcg, return_debug=self._dbg)\n\
+      \                if self._dbg:\n                    print(f\"[RF] fund={m['fundamental_hz']/1e6:.4f}\
+      \ MHz  \"\n                          f\"top5(MHz,dB)={m.pop('_peaks')}\")\n\
+      \                self.metrics = m\n        self._acc = s[idx:].copy()      \
+      \                  # coherent tail\n        return len(raw)\n\n    def get_metrics(self):\
+      \ return dict(self.metrics)\n    def get_snr(self):     return self.metrics[\"\
+      snr_db\"] or 0.0\n    def get_sfdr(self):    return self.metrics[\"sfdr_dbc\"\
+      ] or 0.0\n    def get_enob(self):    return self.metrics[\"enob\"] or 0.0\n"
+    affinity: ''
+    alias: ''
+    avg_frames: '16'
+    comment: ''
+    dc_guard_bins: '8'
+    debug_peaks: 'True'
+    fft_size: '4096'
+    gui_refresh_ms: '500'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    n_harmonics: '5'
+    sample_rate: '150250000'
+    window_type: '"flat"'
+  states:
+    _io_cache: '(''RF Metrics Sink'', ''blk'', [(''sample_rate'', ''150250000.0''),
+      (''fft_size'', ''4096''), (''avg_frames'', ''16''), (''n_harmonics'', ''5''),
+      (''window_type'', "''flat''"), (''gui_refresh_ms'', ''500''), (''dc_guard_bins'',
+      ''8''), (''debug_peaks'', ''False'')], [(''0'', ''complex'', 1)], [], ''RF Metrics
+      Sink: 1x complex64 in, small top-right dashboard.'', [])'
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1104, 108.0]
+    rotation: 0
+    state: disabled
+- name: qtgui_freq_sink_x_1
+  id: qtgui_freq_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    autoscale: 'False'
+    average: '1.0'
+    axislabels: 'True'
+    bw: samp_rate
+    color1: '"blue"'
+    color10: '"dark blue"'
+    color2: '"red"'
+    color3: '"green"'
+    color4: '"black"'
+    color5: '"cyan"'
+    color6: '"magenta"'
+    color7: '"yellow"'
+    color8: '"dark red"'
+    color9: '"dark green"'
+    comment: ''
+    ctrlpanel: 'False'
+    fc: '0'
+    fftsize: '2048'
+    freqhalf: 'True'
+    grid: 'False'
+    gui_hint: ''
+    label: Relative Gain
+    label1: ''
+    label10: ''''''
+    label2: ''''''
+    label3: ''''''
+    label4: ''''''
+    label5: ''''''
+    label6: ''''''
+    label7: ''''''
+    label8: ''''''
+    label9: ''''''
+    legend: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    name: '""'
+    nconnections: '1'
+    norm_window: 'False'
+    showports: 'False'
+    tr_chan: '0'
+    tr_level: '0.0'
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_tag: '""'
+    type: complex
+    units: dB
+    update_time: '0.10'
+    width1: '1'
+    width10: '1'
+    width2: '1'
+    width3: '1'
+    width4: '1'
+    width5: '1'
+    width6: '1'
+    width7: '1'
+    width8: '1'
+    width9: '1'
+    wintype: window.WIN_BLACKMAN
+    ymax: '10'
+    ymin: '-100'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [712, 164.0]
+    rotation: 0
+    state: true
+- name: qtgui_time_sink_x_0
+  id: qtgui_time_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    autoscale: 'False'
+    axislabels: 'True'
+    color1: blue
+    color10: dark blue
+    color2: red
+    color3: blue
+    color4: red
+    color5: blue
+    color6: red
+    color7: blue
+    color8: red
+    color9: dark green
+    comment: ''
+    ctrlpanel: 'False'
+    entags: 'True'
+    grid: 'False'
+    gui_hint: ''
+    label1: Signal 1
+    label10: Signal 10
+    label2: Signal 2
+    label3: Signal 3
+    label4: Signal 4
+    label5: Signal 5
+    label6: Signal 6
+    label7: Signal 7
+    label8: Signal 8
+    label9: Signal 9
+    legend: 'True'
+    marker1: '-1'
+    marker10: '-1'
+    marker2: '-1'
+    marker3: '-1'
+    marker4: '-1'
+    marker5: '-1'
+    marker6: '-1'
+    marker7: '-1'
+    marker8: '-1'
+    marker9: '-1'
+    name: '""'
+    nconnections: '1'
+    size: '1024'
+    srate: samp_rate
+    stemplot: 'False'
+    style1: '1'
+    style10: '1'
+    style2: '1'
+    style3: '1'
+    style4: '1'
+    style5: '1'
+    style6: '1'
+    style7: '1'
+    style8: '1'
+    style9: '1'
+    tr_chan: '0'
+    tr_delay: '0'
+    tr_level: '0.0'
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_slope: qtgui.TRIG_SLOPE_POS
+    tr_tag: '""'
+    type: complex
+    update_time: '0.05'
+    width1: '1'
+    width10: '1'
+    width2: '1'
+    width3: '1'
+    width4: '1'
+    width5: '1'
+    width6: '1'
+    width7: '1'
+    width8: '1'
+    width9: '1'
+    ylabel: Amplitude
+    ymax: '1.5'
+    ymin: '-1.5'
+    yunit: '""'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [712, 92.0]
+    rotation: 0
+    state: true
+
+connections:
+- [epy_block_0, '0', qtgui_freq_sink_x_1, '0']
+- [epy_block_0, '0', qtgui_time_sink_x_0, '0']
+
+metadata:
+  file_format: 1

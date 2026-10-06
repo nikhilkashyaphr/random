@@ -1,0 +1,42 @@
+# 2026-10-05T00:10:26+05:30 suite=gui test=sim_loopback
+Internal ctest changing into directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui/DartConfiguration.tcl
+Test project /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 2
+    Start 2: sim_loopback
+
+2: Test command: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui/sim_loopback_test
+2: Working Directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui
+2: Test timeout computed to be: 10000000
+2: Simulated RF loopback (SimulatedSource + TxState)
+2: 
+2:   PASS  DDS selected: tone at +9.9994 MHz (DDS 10 MHz, positive frequency)
+2:   PASS  DDS selected: tone 68.3 dB above the floor
+2:   PASS  DDS selected, generator running: DDS wins (+15.0000 MHz)
+2:   PASS  Host + generator: tone at +6.9825 MHz (generator transmits 6.982422 MHz)
+2:   PASS  Host + generator: tone 67.8 dB above the floor
+2:   PASS  Host + generator, 16 MiB loop: tone at +9.9994 MHz
+2:   PASS  Host + generator, negative tone: -4.9800 MHz
+2:   PASS  Host + square wave: fundamental at +4.0031 MHz
+2:   PASS  Host + square wave: harmonics present (SFDR 9.3 dB, a sine would be >40)
+2:   PASS  Host, nothing transmitting: no carrier (peak 34.4 dB over floor at +0.000 MHz — DC offset only)
+2:   PASS  DDS outside the displayed band: not aliased into view
+2:   PASS    ...and the status bar says why: "Simulated loopback: DDS 70.000 MHz is outside the displayed ±61.440 MHz band"
+2:   PASS  loopback off: modem demo still produced (mean power 0.246)
+2: 
+2: RESULT: PASS
+1/1 Test #2: sim_loopback .....................   Passed    0.70 sec
+
+The following tests passed:
+	sim_loopback
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.71 sec

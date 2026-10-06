@@ -1,0 +1,64 @@
+GNU Radio Flowgraph Setup
+=========================
+
+H2C PATH (generate and send signal to card):
+---------------------------------------------
+1. IQ Source (iq_source_v9.py)
+   - Module:      iq_source_v9
+   - Class:       blk
+   - Sample_Rate: samp_rate
+   - Frequency:   freq_var        <-- use variable, not fixed number
+   - Amplitude:   1
+   - Waveform:    0 (Sine)
+
+2. Throttle
+   - Sample Rate: samp_rate
+
+3. FIFO Sink (fifo_sink_v2.py)
+   - Module:      fifo_sink_v2
+   - Class:       blk
+   - Fifo_Path:   /tmp/iwfg_h2c.fifo   (NO trailing space!)
+   - Chunk_Size:  16384
+   - Queue_Depth: 64
+
+C2H PATH (receive from card and display):
+-----------------------------------------
+1. FIFO Source (live_stream_python_complex.py)
+   - Module:     live_stream_python_complex
+   - Class:      blk
+   - fifo_path:  /tmp/iwfg_c2h.fifo
+   - samp_rate:  samp_rate
+
+2. Throttle
+   - Sample Rate: samp_rate
+
+3. Display blocks (QT GUI Sink, Time Domain, Waterfall, Constellation)
+
+LIVE FREQUENCY CONTROL (fixes slider not working):
+--------------------------------------------------
+Add these blocks to the flowgraph:
+
+Block 1: Variable
+  ID:    samp_rate
+  Value: 184320000
+
+Block 2: Variable
+  ID:    freq_var
+  Value: 10000000
+
+Block 3: QT GUI Range
+  ID:               variable_qtgui_range_0
+  Label:            Frequency
+  Variable to change: freq_var        <-- SET THIS FIELD
+  Default Value:    20000000
+  Start:            1000000
+  Stop:             500000000
+  Step:             1000000
+
+Block 4: Variable  (THE CALLBACK - this is what wires slider to block)
+  ID:    freq_cb
+  Value: iq_source_0.set_frequency(freq_var)
+         ^^^^^^^^^^ must match ID of your IQ Source block
+
+The callback Variable re-evaluates every time freq_var changes.
+This calls set_frequency() on the live running block immediately.

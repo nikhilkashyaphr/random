@@ -1,0 +1,65 @@
+== firmware: DAC input routing (main.c) ==
+DAC input source routing (firmware main.c)
+  PASS  refuses to touch the switch before it is initialised
+  PASS    ...and leaves it untouched
+  PASS  boot default routes successfully
+  PASS  boot default puts the DDS on the DAC (was: host)
+  PASS  select host
+  PASS  host selection puts the H2C stream on the DAC
+  PASS  readback reports host
+  PASS  select DDS
+  PASS  DDS selection puts the DDS on the DAC
+  PASS  readback reports DDS
+  PASS  rejects source 2
+  PASS  rejects source -1
+  PASS  an invalid request leaves the routing alone
+  PASS  disabled switch reads NONE
+  PASS  name: DDS
+  PASS  name: host
+  PASS  exactly one register commit per change
+
+RESULT: PASS
+
+== pcie_emu ==
+Internal ctest changing into directory: /tmp/tmp.Q20vM8zjEA/pcie_emu
+Test project /tmp/tmp.Q20vM8zjEA/pcie_emu
+    Start 1: pcie_e2e_fw_1_2_1
+1/2 Test #1: pcie_e2e_fw_1_2_1 ................   Passed    0.08 sec
+    Start 2: pcie_e2e_fw_1_2_0
+2/2 Test #2: pcie_e2e_fw_1_2_0 ................   Passed    0.03 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =   0.11 sec
+
+== gui ==
+Internal ctest changing into directory: /tmp/tmp.Q20vM8zjEA/gui
+Test project /tmp/tmp.Q20vM8zjEA/gui
+    Start 1: tx_path
+1/4 Test #1: tx_path ..........................   Passed    1.47 sec
+    Start 2: sim_loopback
+2/4 Test #2: sim_loopback .....................   Passed    0.69 sec
+    Start 3: control_window
+3/4 Test #3: control_window ...................   Passed   19.02 sec
+    Start 4: app_loopback
+4/4 Test #4: app_loopback .....................   Passed   15.67 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Total Test time (real) =  36.85 sec
+
+== h2c_emu ==
+Internal ctest changing into directory: /tmp/tmp.Q20vM8zjEA/h2c_emu
+Test project /tmp/tmp.Q20vM8zjEA/h2c_emu
+    Start 1: h2c_real_helper
+1/3 Test #1: h2c_real_helper ..................   Passed   15.67 sec
+    Start 2: loopback_chain
+2/3 Test #2: loopback_chain ...................   Passed   81.20 sec
+    Start 3: app_live_session
+3/3 Test #3: app_live_session .................   Passed   35.59 sec
+
+100% tests passed, 0 tests failed out of 3
+
+Total Test time (real) = 132.47 sec
+
+ALL TESTS: PASS

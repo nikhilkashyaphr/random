@@ -1,0 +1,6 @@
+Record
+sudo ./c2h_store -c 0 -t 1
+
+
+Replay
+./fifo_replay /home/iwave/Desktop/SDR/HRK_testing/A_updated_driver/examples/C2H/Store/capture0.bin

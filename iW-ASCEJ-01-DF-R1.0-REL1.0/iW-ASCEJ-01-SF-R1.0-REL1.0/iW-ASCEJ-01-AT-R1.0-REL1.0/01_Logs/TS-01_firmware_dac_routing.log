@@ -1,0 +1,21 @@
+# 2026-10-05T00:09:26+05:30 host: Linux 6.18.44-fc-v64 x86_64
+DAC input source routing (firmware main.c)
+  PASS  refuses to touch the switch before it is initialised
+  PASS    ...and leaves it untouched
+  PASS  boot default routes successfully
+  PASS  boot default puts the DDS on the DAC (was: host)
+  PASS  select host
+  PASS  host selection puts the H2C stream on the DAC
+  PASS  readback reports host
+  PASS  select DDS
+  PASS  DDS selection puts the DDS on the DAC
+  PASS  readback reports DDS
+  PASS  rejects source 2
+  PASS  rejects source -1
+  PASS  an invalid request leaves the routing alone
+  PASS  disabled switch reads NONE
+  PASS  name: DDS
+  PASS  name: host
+  PASS  exactly one register commit per change
+
+RESULT: PASS

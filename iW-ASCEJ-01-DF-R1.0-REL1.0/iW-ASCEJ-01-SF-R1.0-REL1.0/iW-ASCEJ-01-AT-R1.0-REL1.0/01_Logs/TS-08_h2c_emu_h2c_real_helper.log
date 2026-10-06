@@ -1,0 +1,50 @@
+# 2026-10-05T00:11:50+05:30 suite=h2c_emu test=h2c_real_helper
+Internal ctest changing into directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/DartConfiguration.tcl
+Test project /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 1
+    Start 1: h2c_real_helper
+
+1: Test command: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/h2c_emu_test
+1: Working Directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu
+1: Environment variables: 
+1:  H2C_BIN=/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/iwfg_h2c
+1:  FAKE_IWFG_SO=/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/libfake_iwfg.so
+1: Test timeout computed to be: 180
+1: Real iwfg_h2c + IqGenerator, card replaced by fake_iwfg.so
+1: 
+1:   PASS  16 KiB chunks, 5 us per transfer: 593.4 MiB/s < 762.9 MiB/s the DAC reads — starved (the bench symptom)
+1:   PASS  1 MiB chunks (the 1.2.4 default), same cost: 753.0 MiB/s — the DAC is kept fed
+1:   PASS  16 MiB chunks, same cost: 768.0 MiB/s
+1:   PASS  DAC stream captured (3 loops, 284 ms from start incl. building the loop)
+1:   PASS  tone at 10.000038 MHz (requested 10 MHz, transmitted 9.999990)
+1:   PASS  across a loop seam: SFDR 90.8 dB — seamless, no interference
+1:   PASS  16 MiB loop: 10 MHz lands within 9.5 Hz
+1:   PASS  written once: iwfg_h2c reports GR_updates=0/s after loading
+1:   PASS  tone changed to 23.450089 MHz while running
+1:   PASS    ...and is pure (SFDR 86.4 dB)
+1:   PASS  after Stop the card replays silence (peak 0.000000)
+1:   PASS  driver refuses 16 MiB: iwfg_h2c exits (code 1) without a rate line — launcher steps down
+1:   PASS  step-down ladder: 16 MiB -> 4 MiB -> ... -> 16 KiB -> stop
+1:   PASS  parses the bench line: 640.58 MiB/s, 48 updates/s
+1:   PASS  ignores other lines
+1:   PASS  default H2C buffer is 1 MiB
+1:   PASS  IWFG_H2C_CHUNK_BYTES overrides it
+1:   PASS  an invalid override is ignored
+1: 
+1: RESULT: PASS
+1/1 Test #1: h2c_real_helper ..................   Passed   15.30 sec
+
+The following tests passed:
+	h2c_real_helper
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =  15.30 sec

@@ -1,0 +1,74 @@
+# 2026-10-05T00:10:27+05:30 suite=gui test=control_window
+Internal ctest changing into directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui/DartConfiguration.tcl
+Test project /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 3
+    Start 3: control_window
+
+3: Test command: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui/control_window_test
+3: Working Directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/gui
+3: Environment variables: 
+3:  QT_QPA_PLATFORM=offscreen
+3: Test timeout computed to be: 10000000
+3: QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-root'
+3: Control window (offscreen)
+3: 
+3:   PASS  widgets found
+3:   PASS  combo items carry the logical PCIE_DAC_SRC_* values
+3:   PASS  simulation box shown in simulation mode
+3:   PASS  DAC input source usable with no device in simulation
+3:   PASS  select Host: loopback on, host source, nothing transmitting yet
+3:   PASS  Start generator (simulated): host running
+3:   PASS  tone 10 MHz -> published 9.999847 MHz with the 1024 KiB loop (what is really sent, within 381 Hz)
+3:   PASS  loop length = H2C buffer / 4 (262144 samples)
+3:   PASS  backend on 16 KiB: loop follows (4096 samples, 10.009766 MHz)
+3:   PASS  H2C link monitor present
+3:   PASS  640.58 MiB/s flagged: "⚠ H2C link 640.6 MiB/s, but the DAC reads 762.9 MiB/s: it runs dry about 16% of the time a"
+3:   PASS  762.9 MiB/s reported as keeping the DAC full
+3:   PASS  select DDS: published
+3:   PASS  Stop generator (simulated)
+3:   PASS  starting the generator in simulation routes the DAC to Host
+3:   PASS  leaving simulation stops the modelled generator
+3:   PASS  simulation box hidden in live mode
+3:   PASS  live, no device: DAC input source disabled (nothing to send to)
+3:   PASS  rdma_tx control block hidden outside RoCEv2
+3:   PASS    ...and shown for RoCEv2
+3:   PASS  Verify loopback button present
+3:   PASS  loopback follows the generator -> verified (inversion reported)
+3:   PASS  tone restored after the check (10.000000 MHz)
+3:   PASS  Received row: identifies the generator's tone
+3:   PASS  receiver stuck on the DDS -> NOT verified, cause named: "✗ The received tone did NOT move (it stayed at 10.000 MHz) when the generator mo"
+3:   PASS  display at the wrong rate -> reported as scaling, not as a transmit failure
+3:   PASS  live, not attached: says the DAC input could not be set (does not pretend)
+3:   PASS  live, no reader: state is "Waiting for iwfg_h2c…", not "Running"
+3:   PASS  stopped cleanly
+3: 
+3:   helper state and recovery actions
+3:   PASS  Retry transmit and Capture 1 channel buttons exist
+3:   PASS  no backend: Retry transmit hidden
+3:   PASS  H2C playback row shows the helper state and why
+3:   PASS  backend running: Retry transmit offered
+3:   PASS  Retry transmit asks the main window to relaunch iwfg_h2c
+3:   PASS  C2H row: 2417 of 3052 MiB/s -> OVERLOADED, says it interrupts H2C
+3:   PASS  Capture 1 channel offered, disabled until RFDC attached
+3:   PASS  not attached: channel count left alone (PL GPIO cannot be set)
+3:   PASS  1 channel, 760 of 763 MiB/s: no overload, button hidden
+3:   PASS  not live: C2H row says so
+3: 
+3:   (27 TxState updates published)
+3: RESULT: PASS
+1/1 Test #3: control_window ...................   Passed   18.79 sec
+
+The following tests passed:
+	control_window
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =  18.79 sec

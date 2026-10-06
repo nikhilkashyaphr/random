@@ -1,0 +1,37 @@
+//==============================================================================
+// boot.bif - ZU47DR RFSoC bare-metal BOOT.BIN
+//
+// Build:
+//     cd /home/iwave/Downloads/Baremetal_COde/Udpate_S1/boot
+//     bootgen -arch zynqmp -image boot.bif -o BOOT.BIN -w on
+//
+// ABSOLUTE PATHS are used deliberately. bootgen resolves relative paths against
+// its CURRENT WORKING DIRECTORY, not against the .bif location - which is why
+// running it from the workspace root gave "Cannot read file - zynqmp_pmufw.elf".
+//
+// NOTE ON [fsbl_config]:
+//   Older guides (and bootgen up to ~2023.x) required "[fsbl_config] a53_x64".
+//   bootgen 2025.2 rejects it:
+//       "[fsbl_config] a53_x64 ... is no more supported.
+//        Use 'destination_cpu' attribute for bootloader partition"
+//   destination_cpu=a53-0 already selects the 64-bit A53, so the line is gone.
+//
+// PARTITION ORDER MATTERS. The bitstream MUST precede the application: the
+// RFDC, AXI GPIO, AXIS switch and Quad SPI registers main() touches do not
+// exist until the PL is configured.
+//==============================================================================
+
+the_ROM_image:
+{
+    [bootloader, destination_cpu=a53-0]
+        /home/iwave/Downloads/Baremetal_COde/Udpate_S1/platform_ZU47/export/platform_ZU47/sw/boot/fsbl.elf
+
+    [pmufw_image]
+        /home/iwave/Downloads/Baremetal_COde/Udpate_S1/platform_ZU47/export/platform_ZU47/sw/qemu/pmufw.elf
+
+    [destination_device=pl]
+        /home/iwave/Downloads/Baremetal_COde/Udpate_S1/platform_ZU47/export/platform_ZU47/hw/sdt/H2C_pcie_control.bit
+
+    [destination_cpu=a53-0, exception_level=el-3]
+        /home/iwave/Downloads/Baremetal_COde/Udpate_S1/app_component/build/app_component.elf
+}

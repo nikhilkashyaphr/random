@@ -1,0 +1,132 @@
+# 2026-10-05T00:12:06+05:30 suite=h2c_emu test=loopback_chain
+Internal ctest changing into directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/DartConfiguration.tcl
+Test project /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 2
+    Start 2: loopback_chain
+
+2: Test command: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/loopback_emu_test
+2: Working Directory: /tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu
+2: Environment variables: 
+2:  H2C_BIN=/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/iwfg_h2c
+2:  C2H_BIN=/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/c2h_stream
+2:  FAKE_IWFG_SO=/tmp/claude-0/-home-claude/4305bb77-a8fc-58c9-b690-6186486f6825/scratchpad/pkgbuild/vwork/h2c_emu/libfake_iwfg.so
+2: Test timeout computed to be: 300
+2: Send-and-receive chain: generator -> iwfg_h2c -> [fake card, DAC->ADC loop] -> c2h_stream -> reader
+2: 
+2:   PASS  G  both helpers load (c2h_stream: ok, iwfg_h2c: ok)
+2:   PASS  G  pre-flight took 3 ms (1.2.3: ~6000 ms with the window frozen)
+2:   PASS  G  pre-flight opened no device node
+2: 
+2: A  send and receive
+2:   PASS  A  backend ready (capture FIFO /tmp/loopback_emu_3881/c2h.fifo)
+2:   PASS  A  iwfg_h2c launched with the 1 MiB default buffer (got 1048576)
+2:   PASS  A  H2C playback reports Streaming
+2:   PASS  A  iwfg_h2c's delivery reported to the GUI: 761.0 MiB/s (the DAC needs 762.9)
+2:   PASS  A  46137344 samples received through the loopback
+2:   PASS  A  received tone 9.999847 MHz = transmitted 9.999847 MHz
+2:   PASS  A  received tone is clean: SFDR 82.3 dB
+2:   PASS  A  c2h_stream's own rate arrives live (160.0 MiB/s; stdbuf line buffering)
+2:   PASS  A  no failure reported
+2:   PASS  H  backend stopped (asynchronously)
+2:   PASS  H  reader with no writer used 0.05 s CPU in 1.5 s (1.2.3 spun a whole core)
+2:   PASS  H  the reader says it is waiting for the capture helper
+2: 
+2: B  capture helper fails mid-stream (driver error)
+2:   PASS  B  the launcher saw c2h_stream end and restarted it
+2:   PASS  B  the reason is named (not just "exit 0")
+2:   PASS  B  the reader re-attached to the new FIFO by itself
+2:   PASS  B  data flows again after the restart (2818048 new samples)
+2:   PASS  B  and it is the transmitted tone (9.999847 MHz, SFDR 82.3 dB)
+2:   PASS  B  no fatal failure, no dialog
+2:   PASS  B  transmit was not disturbed (iwfg_h2c launched once)
+2: 
+2: C  card does not complete transfers above 256 KiB
+2:   PASS  C  stepped down 1 MiB -> 256 KiB and streams (state streaming)
+2:   PASS  C  the step-down was reported
+2:   PASS  C  it first reopened at the same size, and stepped down only when that stalled too
+2:   PASS  C  the generator followed the new loop length; tone received 10.000610 MHz, SFDR 82.3 dB
+2:   PASS  C  no failure dialog
+2: 
+2: D  card never consumes H2C data
+2:   PASS  D  steps down to 16 KiB, then reports Stalled (not a size problem)
+2:   PASS  D  iwfg_h2c is left running: it resumes by itself when the card consumes
+2:   PASS  D  the operator is told what to check
+2:   PASS  D  capture keeps running meanwhile (41943040 samples in 1 s)
+2:   PASS  D  no dialog
+2: 
+2: K  card consumes nothing at first, then starts (DAC input switched late)
+2:   PASS  K  walked down to 16 KiB and reports Stalled
+2:   PASS  K  once the card consumes, transmit is relaunched at the 1 MiB default (not left on 16 KiB)
+2:   PASS  K  tone received 9.999847 MHz, SFDR 82.3 dB
+2:   PASS  K  no dialog
+2: 
+2: P  first transmit helper never completes a transfer; a reopen cures it
+2:   PASS  P  streaming again at 1 MiB after one same-size reopen (buffer 1024 KiB)
+2:   PASS  P  no step-down (1.2.4 walked straight down the ladder)
+2:   PASS  P  tone received 9.999847 MHz
+2: 
+2: M  stop closes transmit before capture; N  capture FIFO pipe enlarged
+2:   PASS  N  capture FIFO pipe buffer 1024 KiB (default 64 KiB; max allowed 1024 KiB)
+2:   PASS  M  /dev/iwfg1 closed before /dev/iwfg0 (so the driver's QDMA reset runs on the last close)
+2: 
+2: O  card stops delivering C2H data mid-stream (wedged)
+2:   PASS  O  the capture stalled (c2h_stream waits in the driver)
+2:   PASS  O  nothing arrives meanwhile (0 samples in 2 s)
+2:   PASS  O  resetDevice() reported as begun
+2:   PASS  O  ... and finished: capture and transmit restarted
+2:   PASS  O  the reason is logged
+2:   PASS  O  data flows again and it is the transmitted tone (9.999847 MHz)
+2:   PASS  O  transmit streaming again
+2:   PASS  O  no fatal failure
+2: 
+2: E  helpers that ignore SIGINT and SIGTERM
+2:   PASS  E  backend ready
+2:   PASS  E  stop() returned in 0 ms (1.2.3 blocked up to 10 s)
+2:   PASS  E  stopped() after 5590 ms: SIGINT, SIGTERM ignored, SIGKILL worked
+2:   PASS  E  the event loop kept running throughout (longest gap 49 ms)
+2:   PASS  E  nothing left behind
+2: 
+2: F  Start pressed while the previous backend is still exiting
+2:   PASS  F  not refused
+2:   PASS  F  the queued start ran after the stop completed (ready 2 times)
+2: 
+2: I  H2C device node missing
+2:   PASS  I  the capture starts anyway (1.2.3 refused to start at all)
+2:   PASS  I  transmit reported as unavailable, non-fatal: "H2C playback: the device node /tmp/loopback_emu_3881/no_such_iwfg1 doe"
+2:   PASS  I  capture delivers (29360128 samples)
+2: 
+2: J  session launched as C2H only, generator started later
+2:   PASS  J  no transmit helper at first
+2:   PASS  J  ensureH2c() starts iwfg_h2c on demand
+2:   PASS  J  and it streams
+2:   PASS  J  tone received 9.999847 MHz
+2: 
+2: Parsing and policy
+2:   PASS  c2h exit: driver error recognised
+2:   PASS  c2h exit: reader closed recognised
+2:   PASS  c2h exit: signal recognised
+2:   PASS  c2h exit: start-up failure recognised (not restarted)
+2:   PASS  c2h rate line parsed: 2416.93 MiB/s
+2:   PASS  H2C stall lines recognised
+2:   PASS  ladder: 1 MiB default -> 256 KiB -> 64 KiB -> 16 KiB -> stop
+2:   PASS  transmit guard: 4 ch x 200 MSPS -> 2 ch; 2 and 1 left alone; 4 x 250 MSPS -> 1 ch
+2:   PASS  PL GPIO modes: 1 ch -> 1, 2 ch -> 2, 4 ch -> 3
+2:   PASS  measured rate -> channels: 1500 -> 2, 760 -> 1, 3040 -> 4; an overloaded 2417 is not read as a count
+2: 
+2: RESULT: PASS
+1/1 Test #2: loopback_chain ...................   Passed   79.28 sec
+
+The following tests passed:
+	loopback_chain
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =  79.28 sec
